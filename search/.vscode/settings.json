@@ -1,0 +1,9 @@
+{
+    "python.formatting.provider": "black",
+    "[rust]": {
+        "editor.formatOnSave": true,
+    },
+    "[python]":{
+        "editor.formatOnSave": true,
+    }
+}

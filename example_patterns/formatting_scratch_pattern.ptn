@@ -1,0 +1,49 @@
+; This is a scratch pattern showing some different
+; options for syntax (along with their color coding)
+
+; This is a comment
+li a2,0x18
+
+`ANY_BYTES{0,50}`
+
+`START_OR{`
+; Start looking for the verified size argument to malloc
+addiu `Q1/.*`,0x143
+`}OR {`
+   ; Different capture group format maybe?
+   sltiu `Q1`,`Q1`,0x4001
+`}END_OR`
+move a0,`Q1`
+`NOT {`
+`&0x7=0x3`
+`=0x2`
+`"X86"`
+`} NOT_END`
+jalr `Q1`
+
+`META`{
+"foo":"bar",
+"baz":"boop"
+}`META_END`
+
+`OR_START{`
+`=0x3`
+`}OR{`
+`=0x7`
+`}OR_END`
+`NOT {`
+`&0x7=0x3`
+`=0x2`
+`} END_NOT`
+
+
+cmp r1,#0x0
+cpy `Q2/r..?`,r0
+bne `*`
+
+cmp `Q2`,#0x0
+`ANY_BYTES{0,4,2}`
+mov `Q1`,#0x200
+
+
+; Copyright (C) 2023 The MITRE Corporation All Rights Reserved

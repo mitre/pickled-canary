@@ -1,0 +1,21 @@
+[package]
+name = "viz"
+version = "0.0.6"
+authors = ["Peter <plucia@mitre.org>"]
+edition = "2018"
+license-file = "LICENSE.txt"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+treesearchlib = { path = "../treesearchlib" }
+pclib = { path = "../pclib" }
+bitvec = "~1.0"
+petgraph="0.6.0"
+hashbrown = { version = "~0.14", features = ["serde"] }
+clap = { version = "4.3.10", features = ["derive"] }
+
+
+[dev-dependencies]
+rand = "0.8.4"
+lazy_static = "1.4.0"

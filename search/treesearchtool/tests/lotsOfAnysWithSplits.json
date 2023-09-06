@@ -1,0 +1,400 @@
+{
+    "tables": [],
+    "steps": [
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                174,
+                                0,
+                                0,
+                                0
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        },
+        {
+            "dest2": 2,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 4,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 6,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 8,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 10,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 12,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 14,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 16,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 18,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 20,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 22,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 24,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 26,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 28,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 30,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 32,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "SPLIT",
+            "dest1": 33
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTE"
+        },
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                36,
+                                2,
+                                255,
+                                156
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        },
+        {
+            "dest2": 35,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 37,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 39,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 41,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 43,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 45,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 47,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 49,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 51,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 53,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 55,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 57,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 59,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 61,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 63,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "dest2": 65,
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "SPLIT",
+            "dest1": 66
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@22d50750",
+            "type": "ANYBYTE"
+        },
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                36,
+                                2,
+                                2,
+                                0
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        }
+    ]
+}

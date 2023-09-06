@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "treesearchtool",
+    "treesearchlib",
+    "pclib",
+    "pcviz"
+]
+
+[profile.release]
+lto = true
+codegen-units = 1
+# opt-level = 'z'  # Optimize for size.
+# panic = 'abort'
+debug = true

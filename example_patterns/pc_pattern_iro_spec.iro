@@ -1,0 +1,225 @@
+
+# This can be loaded up into https://eeyo.io/iro/ to preview color coding of our
+# pattern language. the "formatting_scratch_pattern.ptn" was used as the test
+# data to be color coded
+
+# Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+
+
+
+name                   = PickledCanary
+file_extensions []     = ptn;
+
+################################################################
+## Constants
+################################################################
+
+__MY_CONSTANT \= (\b[a-z][a-z0-9]*)
+
+################################################################
+## Styles
+################################################################
+
+styles [] {
+
+.comment : style {
+   color                 = light_green
+   italic                = true
+   ace_scope             = comment
+   textmate_scope        = comment
+   pygments_scope        = Comment
+}
+
+.keyword : style {
+   color     = cyan
+   ace_scope             = keyword
+   textmate_scope        = keyword
+   pygments_scope        = Keyword
+}
+
+.numeric : style {
+   color                 = gold
+   ace_scope             = constant.numeric
+   textmate_scope        = constant.numeric
+   pygments_scope        = Number
+}
+
+.punctuation : style {
+   color     = red_2
+   ace_scope             = punctuation
+   textmate_scope        = punctuation
+   pygments_scope        = Punctuation
+}
+
+.text : style {
+   color                 = brown
+   ace_scope             = text
+   textmate_scope        = text
+   pygments_scope        = String
+}
+
+.label : style {
+   color                 = orange
+   ace_scope             = variable
+   textmate_scope        = variable
+   pygments_scope        = Name.Variable
+}
+
+.myregex : style {
+   color                 = yellow
+   ace_scope             = string.regexp
+   textmate_scope        = string.regexp
+   pygments_scope        = String.Regex
+}
+
+.illegal : style {
+   color                 = white
+   background_color      = red
+   ace_scope             = invalid
+   textmate_scope        = invalid
+   pygments_scope        = Generic.Error
+}
+
+.meta : style {
+   color                 = yellow
+   ace_scope             = string.interpolated
+   textmate_scope        = meta.embedded.json
+   pygments_scope        = String.Regex
+}
+
+}
+
+#################################################
+## Parse contexts
+#################################################
+
+contexts [] {
+
+##############################################
+## Main Context - Entry point context
+##############################################
+
+main : context {
+
+   default_style = .text
+
+   # Our comment lines
+   : pattern {
+      regex          \= ([ \t]*;.*)
+      styles []       = .comment;
+   }
+
+   # Our byte pattern
+   : pattern {
+      regex          \= (`)(=)(0x[a-fA-F0-9]{1,2})(`)
+      styles []       = .punctuation, .keyword, .numeric, .punctuation;
+   }
+   
+   # Our string byte pattern
+   : pattern {
+      regex          \= (`)(")([^"]+)(")(`)
+      styles []       = .punctuation, .keyword, .numeric, .keyword, .punctuation;
+   }
+
+   # Our masked byte pattern
+   : pattern {
+      regex          \= (`)(&)(0x[a-fA-F0-9]{1,2})(=)(0x[a-fA-F0-9]{1,2})(`)
+      styles []       = .punctuation, .keyword, .numeric, .keyword, .numeric, .punctuation;
+   }
+
+   # Our ANY_BYTES
+   : inline_push {
+      regex \= (`)(ANY_BYTES\{)
+      styles [] = .punctuation, .keyword;
+      default_style = .numeric
+      : pop {
+         regex       \= (\})(`)
+         styles []    = .keyword, .punctuation;
+      }
+   }
+
+   # PUSH into a START_OR (where we allow `OR` (see "or_inner"))
+   : inline_push {
+      regex \= (`)((?:START_OR|OR_START) *\{?)(`)
+      styles [] = .punctuation, .keyword, .punctuation;
+      # Pop out of the OR context when we see an `END_OR`
+      : pop {
+         regex       \= (`)(\}? *(?:END_OR|OR_END))(`)
+         styles []    = .punctuation, .keyword, .punctuation;
+      }
+      : include "or_inner";
+   }
+
+   # PUSH into a NOT
+   : inline_push {
+      regex \= (`)(NOT *\{)(`)
+      styles [] = .punctuation, .keyword, .punctuation;
+      # Pop out of the OR context when we see an `END_OR`
+      : pop {
+         regex       \= (`)(\} *(?:NOT_END|END_NOT))(`)
+         styles []    = .punctuation, .keyword, .punctuation;
+      }
+      : include "main";
+   }
+
+   # PUSH into a META
+   : inline_push {
+      regex \= (`)(META)(`)
+      styles [] = .punctuation, .keyword, .punctuation;
+      default_style = .meta
+      # Pop out of the OR context when we see an `END_OR`
+      : pop {
+         regex       \= (`)((?:META_END|END_META))(`)
+         styles []    = .punctuation, .keyword, .punctuation;
+      }
+   }
+
+   # Our "wildcard"
+   : pattern {
+      regex \= (`)([^/`]+)(?:(/)([^/`]+))?(`)
+      styles [] = .punctuation, .label, .keyword, .myregex, .punctuation;
+   }
+
+   : pattern {
+      regex \= ([^`]+)
+      styles[] = .text;
+      }
+
+}
+
+or_inner: context {
+   : pattern {
+      regex          \= (`)(\}? *OR *\{?)(`)
+      styles []       = .punctuation, .keyword, .punctuation;
+   }
+
+   : include "main";
+}
+
+neumeric_list: context {
+
+      : include "numeric" ;
+      : pattern {
+         regex \= (,)
+         styles[] =.punctuation;
+      }
+}
+
+
+#################################################
+## End of Contexts
+#################################################
+
+###########################################
+## Numeric Context
+###########################################
+
+numeric : context {
+   : pattern {
+      regex          \= (\b\d+)
+      styles []       = .numeric;
+   }
+}
+
+
+}

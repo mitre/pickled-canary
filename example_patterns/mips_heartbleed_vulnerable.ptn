@@ -1,0 +1,25 @@
+; This pattern looks for tls1_process_heartbeat and/or
+; dtls1_process_heartbeat functions which do NOT have the heartbleed fix applied.
+;
+; This pattern might match two times if both functions are within the binary
+; being examined.
+
+; This should hit at approximately following addresses in /libssl/libssl.so.1.0.0
+; 0x00033878
+; 0x0003e278
+
+
+; Look for TLS1_RT_HEARTBEAT being put into argument 2 of msg_callback
+li a2,0x18
+
+; within 50 bytes of loading TLS1_RT_HEARTBEAT...
+`ANY_BYTES{0,50}`
+
+; Start looking for the unchecked argument to malloc
+addiu `Q1/.*`,`*`,0x13
+move a0,`Q1`
+`ANY_BYTES{0,4}`
+jalr `*`
+
+
+; Copyright (C) 2023 The MITRE Corporation All Rights Reserved

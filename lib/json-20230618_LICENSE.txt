@@ -1,0 +1,1 @@
+This JSON library is from https://github.com/stleary/JSON-java and is licensed as Public Domain

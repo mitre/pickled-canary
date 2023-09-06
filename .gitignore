@@ -1,0 +1,12 @@
+data
+os
+.antProperties.xml
+.settings
+bin
+.classpath
+.project
+.pydevproject
+/.gradle/
+/build/
+search/pickled_canary/pickled_canary_lib.cpython-38-x86_64-linux-gnu.so
+/dist

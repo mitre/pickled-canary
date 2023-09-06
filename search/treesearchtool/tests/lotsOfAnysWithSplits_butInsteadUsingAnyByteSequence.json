@@ -1,0 +1,92 @@
+{
+    "tables": [],
+    "steps": [
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                174,
+                                0,
+                                0,
+                                0
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTESEQUENCE",
+            "min": 0,
+            "max": 16
+        },
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                36,
+                                2,
+                                255,
+                                156
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        },
+        {
+            "note": "org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode@475f9cb4",
+            "type": "ANYBYTESEQUENCE",
+            "min": 0,
+            "max": 16
+        },
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [],
+                            "value": [
+                                36,
+                                2,
+                                2,
+                                0
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        255,
+                        255,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        }
+    ]
+}

@@ -1,0 +1,330 @@
+{
+    "tables": [
+        {
+            "#0x0": [
+                {
+                    "value": [
+                        0,
+                        0
+                    ],
+                    "mask": [
+                        255,
+                        15
+                    ]
+                }
+            ]
+        },
+        {
+            "pc": [
+                {
+                    "value": [
+                        0
+                    ],
+                    "mask": [
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "r2": [
+                {
+                    "value": [
+                        2
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r3": [
+                {
+                    "value": [
+                        3
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r4": [
+                {
+                    "value": [
+                        4
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r5": [
+                {
+                    "value": [
+                        5
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r6": [
+                {
+                    "value": [
+                        6
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r7": [
+                {
+                    "value": [
+                        7
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "lr": [
+                {
+                    "value": [
+                        14
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r8": [
+                {
+                    "value": [
+                        8
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r9": [
+                {
+                    "value": [
+                        9
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r10": [
+                {
+                    "value": [
+                        10
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r12": [
+                {
+                    "value": [
+                        12
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r11": [
+                {
+                    "value": [
+                        11
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "sp": [
+                {
+                    "value": [
+                        13
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r0": [
+                {
+                    "value": [
+                        0
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ],
+            "r1": [
+                {
+                    "value": [
+                        1
+                    ],
+                    "mask": [
+                        15
+                    ]
+                }
+            ]
+        }
+    ],
+    "steps": [
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "SPLIT",
+            "dest1": 1,
+            "dest2": 6
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "type": "ANYBYTE",
+            "value": 44
+        },
+        {
+            "data": [
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [
+                                {
+                                    "type": "Scalar",
+                                    "mask": [
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ],
+                                    "var_id": "Q2",
+                                    "expression": {
+                                        "op": "TokenField",
+                                        "value": {
+                                            "bitend": 11,
+                                            "shift": 0,
+                                            "signbit": false,
+                                            "bitstart": 0,
+                                            "byteend": 1,
+                                            "bigendian": false,
+                                            "bytestart": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "Field",
+                                    "table_id": 0,
+                                    "mask": [
+                                        255,
+                                        15,
+                                        0,
+                                        0
+                                    ],
+                                    "var_id": "Q1"
+                                }
+                            ],
+                            "value": [
+                                0,
+                                240,
+                                160,
+                                227
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        0,
+                        240,
+                        255,
+                        255
+                    ]
+                },
+                {
+                    "type": "MaskAndChoose",
+                    "choices": [
+                        {
+                            "operands": [
+                                {
+                                    "type": "Scalar",
+                                    "mask": [
+                                        0,
+                                        240,
+                                        0,
+                                        0
+                                    ],
+                                    "var_id": "Q2",
+                                    "expression": {
+                                        "op": "TokenField",
+                                        "value": {
+                                            "bitend": 11,
+                                            "shift": 0,
+                                            "signbit": false,
+                                            "bitstart": 0,
+                                            "byteend": 1,
+                                            "bigendian": false,
+                                            "bytestart": 0
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "Field",
+                                    "table_id": 0,
+                                    "mask": [
+                                        255,
+                                        15,
+                                        0,
+                                        0
+                                    ],
+                                    "var_id": "Q1"
+                                }
+                            ],
+                            "value": [
+                                0,
+                                0,
+                                160,
+                                227
+                            ]
+                        }
+                    ],
+                    "mask": [
+                        0,
+                        0,
+                        255,
+                        255
+                    ]
+                }
+            ],
+            "type": "LOOKUP"
+        }
+    ]
+}

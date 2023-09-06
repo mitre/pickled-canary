@@ -1,0 +1,10 @@
+target
+*/target
+lcov.info
+lcov_summary.txt
+callgrind.out.*
+**/__pycache__
+venv
+*.egg-info
+build
+dist

@@ -1,0 +1,27 @@
+; This pattern looks for find_search_domain_name_len in bsd dhclient binaries
+; which do have the namewreck fix.
+;
+
+; This should hit at aprox following addresses in /FreeNAS-12.0-U4-dhclient
+; 0x002115b3
+
+; Look for the shift and & mask used for a pointer in DNS
+SHL `*`,0x8
+AND `*`,0x3f00
+
+MOVZX      ECX,byte ptr [RCX + R8*0x1]
+OR RCX,`*`
+
+`ANY_BYTES{8,18}`
+
+; This is the recursive call. Would be cool to be able to match that, but then
+; we'd need to figure out how to compute call locations and compare them with
+; an earlier label
+CALL `*`
+TEST EAX,EAX
+JS `*`
+ADD `*`,EAX
+ADD `Q2`,0x2
+MOV `*`,`Q2`
+
+; Copyright (C) 2023 The MITRE Corporation All Rights Reserved
