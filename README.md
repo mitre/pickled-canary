@@ -18,6 +18,23 @@
   many binaries!
   - Alternatively, use our [Python library](#python-library)
 
+# Repository Structure
+
+This repository contains all aspects of Pickled Canary including:
+
+- The Ghidra Plugin - complete with a modified copy of Ghidra's assembler
+- The Rust search tool - with Python bindings
+- The Pickled Canary syntax highlighting plugin for VS Code
+
+The location and installation instructions for each of these are described in
+their respective sections below.
+
+[Another repository](https://github.com/mitre/ghidra-pickled-canary) exists
+which is a mirror of the Ghidra repo but containing a branch ("pickled-canary")
+with Pickled Canary specific assembler modifications. This Ghidra fork does
+_not_ currently contain all of the code required to run patterns nor the GUI
+components of Pickled Canary; those are found here for now.
+
 # Ghidra Plugin
 
 ## Download
@@ -114,11 +131,11 @@ If the extension still seems to be installed:
    cloned copy of this repository, and click `Finish`
 1. In the Eclipse `Package Explorer`:
    1. Right click on the newly created project and choose `GhidraDev` > `Link
-   Ghidra...` and choose your Ghidra installation.
+Ghidra...` and choose your Ghidra installation.
    1. Right click on `lib` > `json-20230618.jar` and choose `Build Path` > `Add
-   to Build Path`
+to Build Path`
    1. Right click on `src/test/java` and choose `Build Path` > `Use as Source
-      Folder` 
+Folder`
 
 # Rust Search Tool
 
@@ -136,7 +153,7 @@ finalized a bit more).
 ## Download
 
 The pre-built `treesearchtool` may be downloaded from the Releases Page
-(__Coming soon__). The search tool should be from the same release as was used
+(**Coming soon**). The search tool should be from the same release as was used
 to compile your patterns.
 
 # Python Library
@@ -176,7 +193,7 @@ second_result = next(lazy)
 
 For non-development work on Linux you can download and
 install a pre-built wheel matching your python version from the Releases
-Page (__Coming soon__).
+Page (**Coming soon**).
 
 You can try the "manylinux" version (from the same download location) if the
 shorter-filename version doesn't work.
@@ -208,8 +225,8 @@ provide syntax highlighting for Pickled Canary patterns!
 
 ## Download
 
-You can download the `.vsix` VS Code plugin from the Releases Page (__Coming
-soon__).
+You can download the `.vsix` VS Code plugin from the Releases Page (**Coming
+soon**).
 
 ## Install
 
