@@ -1,0 +1,34 @@
+name: Test pipeline
+
+on:
+  push:
+    branches:
+      PC_beta
+
+permissions:
+  contents: write
+
+jobs:
+  job_1:
+    name: job number 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: step number 1
+        run:
+          echo "This is step 1" >> $GITHUB_OUTPUT
+
+      - name: step number 2
+        run:
+          echo "This is step 2" >> $GITHUB_OUTPUT
+
+  job_2:
+    name: job number 2
+    runs-on: ubuntu-latest
+    steps:
+      - name: step number 3
+        run:
+          echo "This is step 3" >> $GITHUB_OUTPUT
+
+      - name: step number 4
+        run:
+          echo "This is step 4" >> $GITHUB_OUTPUT
