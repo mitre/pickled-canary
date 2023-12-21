@@ -16,6 +16,7 @@ jobs:
       - name: Install Rust Nightly
         run: |
           rustup toolchain install $RUST_VERSION --component rustfmt clippy
+          rustup toolchain install $RUST_VERSION-aarch64-apple-darwin --component rustfmt clippy
           rustup default $RUST_VERSION
           sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
@@ -31,6 +32,9 @@ jobs:
       - name: Build Windows
         working-directory: search
         run: cargo build --release --verbose --target x86_64-pc-windows-gnu
+      - name: Build Mac Aarch64
+        working-directory: search
+        run: cargo build --release --verbose --target aarch-apple-darwin
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
