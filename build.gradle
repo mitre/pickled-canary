@@ -28,7 +28,9 @@
 // Gradle should be invoked from the directory of the project to build.  Please see the
 // application.gradle.version property in <GHIDRA_INSTALL_DIR>/Ghidra/application.properties
 // for the correction version of Gradle to use for the Ghidra installation you specify.
-
+plugins {
+    id("java")
+}
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir
 
@@ -51,12 +53,23 @@ repositories {
 	// Declare dependency repositories here.  This is not needed if dependencies are manually 
 	// dropped into the lib/ directory.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html for more info.
-	// Ex: mavenCentral()`
+	// Ex: mavenCentral()
+	mavenCentral()
+}
+
+test {
+	useJUnitPlatform()
+
+	maxHeapSize='1G'
 }
 
 dependencies {
 	// Any external dependencies added here will automatically be copied to the lib/ directory when
 	// this extension is built.
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.0.3'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.3'
+	testCompileOnly 'junit:junit:4.12' 
+	testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
 }
 
 // Exclude additional files from the built extension
