@@ -13,8 +13,10 @@ jobs:
       - name: Install Nightly
         run: rustup toolchain install nightly --component rustfmt clippy
       - name: Format Rust
+        working-directory: search
         run: cargo +nightly fmt --all -- --color=always --check
       - name: Check Rust with Clippy
+        working-directory: search
         run: cargo +nightly clippy --workspace -- -D warnings
       - name: Build
         working-directory: search
