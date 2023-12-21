@@ -8,12 +8,14 @@ permissions:
 jobs:
   build_rust:
     runs-on: ubuntu-latest
+    env:
+      RUST_VERSION: nightly-2023-09-01
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust Nightly
         run: |
-          rustup toolchain install nightly-2023-10-27 --component rustfmt clippy
-          rustup default nightly-2023-10-27
+          rustup toolchain install $RUST_VERSION --component rustfmt clippy
+          rustup default $RUST_VERSION
           rustup target add x86_64-pc-windows-gnu
       - name: Format Rust
         working-directory: search
