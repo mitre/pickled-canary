@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Nightly
-        run: rustup install nightly
+        run: rustup toolchain install nightly --component rustfmt clippy
       - name: Format Rust
         run: cargo +nightly fmt --all -- --color=always --check
       - name: Check Rust with Clippy
