@@ -33,8 +33,15 @@ jobs:
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
-  build:
+      - name: Archive PC Rust
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            search/target/release/treesearchtool
+            search/target/x86_64-pc-windows-gnu/release/treesearchtool.exe
 
+
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
