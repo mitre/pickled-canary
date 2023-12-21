@@ -16,7 +16,7 @@ jobs:
         run: |
           rustup toolchain install $RUST_VERSION --component rustfmt clippy
           rustup default $RUST_VERSION
-          apt-get install -yqq gcc-mingw-w64
+          sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
       - name: Format Rust
         working-directory: search
