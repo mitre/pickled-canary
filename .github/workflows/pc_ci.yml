@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: pickled_canary_rust_tools
-          path: target/release/binaries
+          path: target/release/binaries/*
 
 
   build:
