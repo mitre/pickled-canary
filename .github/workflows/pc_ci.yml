@@ -16,10 +16,10 @@ jobs:
       - name: Install Rust Nightly
         run: |
           rustup toolchain install $RUST_VERSION --component rustfmt clippy
-          rustup toolchain install $RUST_VERSION-aarch64-apple-darwin --component rustfmt clippy
           rustup default $RUST_VERSION
           sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
+          rustup target add aarch64-apple-darwin
       - name: Format Rust
         working-directory: search
         run: cargo fmt --all -- --color=always --check
