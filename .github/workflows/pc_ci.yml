@@ -6,6 +6,16 @@ permissions:
   contents: read
 
 jobs:
+  build_rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        working-directory: search
+        run: cargo build --verbose
+      - name: Run tests
+        working-directory: search
+        run: cargo test --verbose
   build:
 
     runs-on: ubuntu-latest
