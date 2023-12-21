@@ -6,6 +6,25 @@ permissions:
   contents: read
 
 jobs:
+
+  build_vscode_plugin:
+    runs-on: node:16-buster
+    steps:
+      - uses: actions/checkout@v3
+      - name: Prepare vscode
+        run: |
+          sudo apt-get install -yqq libsecret-1-dev
+          npm install -g vsce
+      - name: Build vscode plugin
+        working-directory: src/vscode_plugin
+        run: vsce package
+      - name: Archive vscode plugin
+        uses: actions/upload-artifact@v3
+        with:
+          path: src/vscode_plugin/*.vsix
+
+
+
   build_rust:
     runs-on: ubuntu-latest
     env:
