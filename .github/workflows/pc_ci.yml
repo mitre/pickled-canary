@@ -15,7 +15,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-          cache: 'npm'
       - name: Prepare vscode
         run: |
           sudo apt-get install -yqq libsecret-1-dev
@@ -26,6 +25,7 @@ jobs:
       - name: Archive vscode plugin
         uses: actions/upload-artifact@v3
         with:
+          name: pickled_canary-vscode-plugin
           path: src/vscode_plugin/*.vsix
 
   build_rust:
