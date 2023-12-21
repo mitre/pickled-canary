@@ -10,20 +10,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Nightly
-        run: rustup toolchain install nightly --component rustfmt clippy
+      - name: Install Rust Nightly
+        run: |
+          rustup toolchain install nightly-2023-10-27 --component rustfmt clippy
+          rustup default nightly-2023-10-27
+          rustup target add x86_64-pc-windows-gnu
       - name: Format Rust
         working-directory: search
-        run: cargo +nightly fmt --all -- --color=always --check
+        run: cargo fmt --all -- --color=always --check
       - name: Check Rust with Clippy
         working-directory: search
-        run: cargo +nightly clippy --workspace -- -D warnings
+        run: cargo clippy --workspace -- -D warnings
       - name: Build
         working-directory: search
-        run: cargo +nightly build --verbose
+        run: cargo build --release --verbose
+      - name: Build Windows
+        working-directory: search
+        run: cargo build --release --verbose --target x86_64-pc-windows-gnu
       - name: Run tests
         working-directory: search
-        run: cargo +nightly test --verbose
+        run: cargo test --verbose
   build:
 
     runs-on: ubuntu-latest
