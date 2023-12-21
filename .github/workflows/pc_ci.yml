@@ -34,7 +34,7 @@ jobs:
         run: cargo build --release --verbose --target x86_64-pc-windows-gnu
       - name: Build Mac Aarch64
         working-directory: search
-        run: cargo build --release --verbose --target aarch-apple-darwin
+        run: cargo build --release --verbose --target aarch64-apple-darwin
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
