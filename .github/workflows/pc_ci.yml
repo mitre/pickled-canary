@@ -7,27 +7,6 @@ permissions:
 
 jobs:
 
-  build_vscode_plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-      - name: Prepare vscode
-        run: |
-          sudo apt-get install -yqq libsecret-1-dev
-          npm install -g vsce
-      - name: Build vscode plugin
-        working-directory: src/vscode_plugin
-        run: vsce package
-      - name: Archive vscode plugin
-        uses: actions/upload-artifact@v3
-        with:
-          name: pickled_canary-vscode-plugin
-          path: src/vscode_plugin/*.vsix
-
   build_rust:
     runs-on: ubuntu-latest
     env:
@@ -55,13 +34,16 @@ jobs:
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
+      - name: Prepare PC Rust archive
+        working-directory: search
+        run: |
+          mkdir target/release/binaries
+          mv search/target/release/treesearchtool search/target/x86_64-pc-windows-gnu/release/treesearchtool.exe target/release/binaries
       - name: Archive PC Rust
         uses: actions/upload-artifact@v3
         with:
           name: pickled_canary_rust_tools
-          path: |
-            search/target/release/treesearchtool
-            search/target/x86_64-pc-windows-gnu/release/treesearchtool.exe
+          path: target/release/binaries
 
 
   build:
