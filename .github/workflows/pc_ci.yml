@@ -38,7 +38,7 @@ jobs:
         working-directory: search
         run: |
           mkdir target/release/binaries
-          mv search/target/release/treesearchtool search/target/x86_64-pc-windows-gnu/release/treesearchtool.exe target/release/binaries
+          mv target/release/treesearchtool target/x86_64-pc-windows-gnu/release/treesearchtool.exe target/release/binaries
       - name: Archive PC Rust
         uses: actions/upload-artifact@v3
         with:
