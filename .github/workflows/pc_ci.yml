@@ -7,25 +7,6 @@ permissions:
 
 jobs:
 
-  build_rust_mac_aarch64:
-    runs-on: macos-latest-xlarge
-    env:
-      RUST_VERSION: nightly-2023-09-01
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust Nightly
-        run: |
-          rustup toolchain install $RUST_VERSION --component rustfmt clippy
-          rustup default $RUST_VERSION
-      - name: Build
-        working-directory: search
-        run: cargo build --release --verbose
-      - name: Archive PC Rust
-        uses: actions/upload-artifact@v3
-        with:
-          name: pickled_canary_rust_tools_mac_aarch64
-          path: target/release/treesearchtool
-
   build_rust_mac_x86_64:
     runs-on: macos-latest
     env:
@@ -57,6 +38,7 @@ jobs:
           rustup default $RUST_VERSION
           sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
+          rustup target add x86_64-apple-darwin
       - name: Format Rust
         working-directory: search
         run: cargo fmt --all -- --color=always --check
@@ -69,6 +51,9 @@ jobs:
       - name: Build Windows
         working-directory: search
         run: cargo build --release --verbose --target x86_64-pc-windows-gnu
+      - name: Build MacOS_x86_64
+        working-directory: search
+        run: cargo build --release --verbose --target x86_64-apple-darwin
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
