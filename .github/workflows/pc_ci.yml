@@ -24,7 +24,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: pickled_canary_rust_tools_mac_x86_64
-          path: target/release/treesearchtool
+          path: search/target/release/treesearchtool
         
   build_rust:
     runs-on: ubuntu-latest
