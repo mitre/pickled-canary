@@ -138,6 +138,7 @@ jobs:
       run: |
         gradle build
         gradle
+        gradle test jacocoTestReport
     - name: Cleanup PC extesion zip file
       run: |
         cd dist
@@ -148,4 +149,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: pickled_canary-${{ env.GHIDRA_LABEL }}
-        path: dist
+        path: dist    
+    - name: Archive Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
+        path: build/reports/jacoco/test/*
