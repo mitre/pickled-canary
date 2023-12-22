@@ -139,7 +139,7 @@ jobs:
         gradle build
         gradle
         gradle test jacocoTestReport
-    - name: Cleanup PC extesion zip file
+    - name: Cleanup PC extension zip file
       run: |
         cd dist
         mv *.zip pc.zip
@@ -155,3 +155,22 @@ jobs:
       with:
         name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
         path: build/reports/jacoco/test/*
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build, build_rust, build_rust_mac_x86_64]
+    steps:
+      - name: Make ouptut directory
+        run: mkdir output_release
+      - name: Download Rust x86_64
+        uses: actions/download-artifaccts@v3
+        with:
+          path: output_release
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: |
+            output_release/*
