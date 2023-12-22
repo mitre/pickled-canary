@@ -163,7 +163,7 @@ jobs:
       - name: Make ouptut directory
         run: mkdir output_release
       - name: Download Rust x86_64
-        uses: actions/download-artifaccts@v3
+        uses: actions/download-artifact@v3
         with:
           path: output_release
           merge-multiple: true
