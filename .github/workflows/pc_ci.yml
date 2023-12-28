@@ -157,6 +157,7 @@ jobs:
         path: build/reports/jacoco/test/*
 
   release:
+    permissions: write-all
     runs-on: ubuntu-latest
     needs: [build, build_rust, build_rust_mac_x86_64]
     steps:
