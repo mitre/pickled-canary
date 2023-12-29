@@ -172,9 +172,9 @@ jobs:
       - name: Make zip
         run: |
           cd output_release
-          zip pickled_canary-${{ github.ref_name }} *
+          zip pickled_canary-${{ github.ref_name }}.zip *
           ls -la
-          cp pickled_canary-${{ github.ref_name }} ../
+          cp pickled_canary-${{ github.ref_name }}.zip ../
 
       - name: Create Release
         env:
