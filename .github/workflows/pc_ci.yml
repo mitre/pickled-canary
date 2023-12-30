@@ -180,6 +180,8 @@ jobs:
           cd output_release
           mkdir ../ouput_release_coverage
           mv *_coverage_report ../ouput_release_coverage
+          mv artifact/* .
+          rmdir artifact
           zip -r pickled_canary-${{ github.ref_name }}.zip *
           ls -la
           cp pickled_canary-${{ github.ref_name }}.zip ../
