@@ -139,17 +139,22 @@ jobs:
         gradle build
         gradle
         gradle test jacocoTestReport
-    - name: Cleanup PC extension zip file
-      run: |
-        cd dist
-        mv *.zip pc.zip
-        unzip pc.zip
-        rm -rf pc.zip ${{ github.event.repository.name }}/.github
-    - name: Archive PC extension zip file
+    # - name: Cleanup PC extension zip file
+    #   run: |
+    #     cd dist
+    #     mv *.zip pc.zip
+    #     cp pc.zip pickled_canary-${{ env.GHIDRA_LABEL }}.zip
+    #     unzip pc.zip
+    #     rm -rf pc.zip ${{ github.event.repository.name }}/.github
+    # - name: Archive PC extension zip file
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: pickled_canary-${{ env.GHIDRA_LABEL }}
+    #     path: dist
+    - name: Archive PC Extension
       uses: actions/upload-artifact@v3
       with:
-        name: pickled_canary-${{ env.GHIDRA_LABEL }}
-        path: dist    
+        path: dist/*.zip
     - name: Archive Coverage Report
       uses: actions/upload-artifact@v3
       with:
