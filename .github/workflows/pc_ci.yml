@@ -1,4 +1,4 @@
-name: Pickled-Canary CI with Gradle
+name: Pickled-Canary CI
 
 on: [workflow_dispatch, push, pull_request]
 
@@ -7,6 +7,7 @@ permissions:
 
 jobs:
 
+  # This builds the rust search components for x86 macs
   build_rust_mac_x86_64:
     runs-on: macos-latest
     env:
@@ -25,7 +26,8 @@ jobs:
         with:
           name: pickled_canary_rust_tools_mac_x86_64
           path: search/target/release/treesearchtool
-        
+
+  # This builds and tests the rust search components for Linux and Windows
   build_rust:
     runs-on: ubuntu-latest
     env:
@@ -64,7 +66,7 @@ jobs:
           name: pickled_canary_rust_tools
           path: search/target/release/binaries/*
 
-
+  # This builds and tests the Ghidra plugin
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -132,25 +134,16 @@ jobs:
       uses: gradle/gradle-build-action@v2
       with:
         gradle-version: 8.5
-    - name: Execute Gradle build  
+    - name: Execute Gradle build
       env:
         GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
       run: |
         gradle build
         gradle
-        gradle test jacocoTestReport
-    # - name: Cleanup PC extension zip file
-    #   run: |
-    #     cd dist
-    #     mv *.zip pc.zip
-    #     cp pc.zip pickled_canary-${{ env.GHIDRA_LABEL }}.zip
-    #     unzip pc.zip
-    #     rm -rf pc.zip ${{ github.event.repository.name }}/.github
-    # - name: Archive PC extension zip file
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: pickled_canary-${{ env.GHIDRA_LABEL }}
-    #     path: dist
+    - name: Execute Gradle test and coverage
+      env:
+        GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
+      run: gradle test jacocoTestReport
     - name: Archive PC Extension
       uses: actions/upload-artifact@v3
       with:
@@ -161,6 +154,7 @@ jobs:
         name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
         path: build/reports/jacoco/test/*
 
+  # Bundle up a draft release if the version is tagged
   release:
     permissions: write-all
     runs-on: ubuntu-latest
@@ -178,8 +172,8 @@ jobs:
       - name: Make zip
         run: |
           cd output_release
-          mkdir ../ouput_release_coverage
-          mv *_coverage_report ../ouput_release_coverage
+          mkdir ../output_release_coverage
+          mv *_coverage_report ../output_release_coverage
           mv pickled_canary_rust_tools_mac_x86_64/treesearchtool pickled_canary_rust_tools/treesearchtool_mac_x86_64
           rmdir pickled_canary_rust_tools_mac_x86_64
           mv artifact/* .
@@ -187,11 +181,9 @@ jobs:
           zip -r pickled_canary-${{ github.ref_name }}.zip *
           ls -la
           cp pickled_canary-${{ github.ref_name }}.zip ../
-          cd ../ouput_release_coverage
+          cd ../output_release_coverage
           zip -r pickled_canary-coverage_reports-${{ github.ref_name }}.zip *
           mv pickled_canary-coverage_reports-${{ github.ref_name }}.zip ../
-
-
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
