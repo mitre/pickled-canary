@@ -1,3 +1,4 @@
+# This CI builds, tests, and (optionally) creates a draft release of Pickled Canary
 name: Pickled-Canary CI
 
 on: [workflow_dispatch, push, pull_request]
