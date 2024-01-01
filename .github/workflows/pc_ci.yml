@@ -1,4 +1,4 @@
-# This CI builds, tests, and (optionally) creates a draft release of Pickled Canary
+# This CI builds, tests, and (optionally) creates a draft release of PC
 name: Pickled-Canary CI
 
 on: [workflow_dispatch, push, pull_request]
