@@ -1,0 +1,195 @@
+# This CI builds, tests, and (optionally) creates a draft release of PC
+name: Pickled-Canary CI
+
+on: [workflow_dispatch, push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+
+  # This builds the rust search components for x86 macs
+  build_rust_mac_x86_64:
+    runs-on: macos-latest
+    env:
+      RUST_VERSION: nightly-2023-09-01
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust Nightly
+        run: |
+          rustup toolchain install $RUST_VERSION --component rustfmt clippy
+          rustup default $RUST_VERSION
+      - name: Build
+        working-directory: search
+        run: cargo build --release --verbose
+      - name: Archive PC Rust
+        uses: actions/upload-artifact@v3
+        with:
+          name: pickled_canary_rust_tools_mac_x86_64
+          path: search/target/release/treesearchtool
+
+  # This builds and tests the rust search components for Linux and Windows
+  build_rust:
+    runs-on: ubuntu-latest
+    env:
+      RUST_VERSION: nightly-2023-09-01
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust Nightly
+        run: |
+          rustup toolchain install $RUST_VERSION --component rustfmt clippy
+          rustup default $RUST_VERSION
+          sudo apt-get install -yqq gcc-mingw-w64
+          rustup target add x86_64-pc-windows-gnu
+      - name: Format Rust
+        working-directory: search
+        run: cargo fmt --all -- --color=always --check
+      - name: Check Rust with Clippy
+        working-directory: search
+        run: cargo clippy --workspace -- -D warnings
+      - name: Build
+        working-directory: search
+        run: cargo build --release --verbose
+      - name: Build Windows
+        working-directory: search
+        run: cargo build --release --verbose --target x86_64-pc-windows-gnu
+      - name: Run tests
+        working-directory: search
+        run: cargo test --verbose
+      - name: Prepare PC Rust archive
+        working-directory: search
+        run: |
+          mkdir target/release/binaries
+          mv target/release/treesearchtool target/x86_64-pc-windows-gnu/release/treesearchtool.exe target/release/binaries
+      - name: Archive PC Rust
+        uses: actions/upload-artifact@v3
+        with:
+          name: pickled_canary_rust_tools
+          path: search/target/release/binaries/*
+
+  # This builds and tests the Ghidra plugin
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        # - GHIDRA_VERSION: '9.2.2'
+        #   GHIDRA_BUILD_DATE: "20201229"
+        # - GHIDRA_VERSION: '9.2.4'
+        #   GHIDRA_BUILD_DATE: "20210427"
+        # - GHIDRA_VERSION: "10.0"
+        #   GHIDRA_BUILD_DATE: "20210621"
+        # - GHIDRA_VERSION: "10.0.1"
+        #   GHIDRA_BUILD_DATE: "20210708"
+        # - GHIDRA_VERSION: "10.0.2"
+        #   GHIDRA_BUILD_DATE: "20210804"
+        # - GHIDRA_VERSION: "10.0.3"
+        #   GHIDRA_BUILD_DATE: "20210908"
+        # - GHIDRA_VERSION: "10.1"
+        #   GHIDRA_BUILD_DATE: "20211210"
+        # - GHIDRA_VERSION: "10.1.1"
+        #   GHIDRA_BUILD_DATE: "20211221"
+        # - GHIDRA_VERSION: "10.1.2"
+        #   GHIDRA_BUILD_DATE: "20220125"
+        # - GHIDRA_VERSION: "10.1.3"
+        #   GHIDRA_BUILD_DATE: "20220421"
+        # - GHIDRA_VERSION: "10.1.4"
+        #   GHIDRA_BUILD_DATE: "20220519"
+        # - GHIDRA_VERSION: "10.1.5"
+        #   GHIDRA_BUILD_DATE: "20220726"
+        # - GHIDRA_VERSION: "10.2"
+        #   GHIDRA_BUILD_DATE: "20221101"
+        # - GHIDRA_VERSION: "10.2.1"
+        #   GHIDRA_BUILD_DATE: "20221110"
+        # - GHIDRA_VERSION: "10.2.2"
+        #   GHIDRA_BUILD_DATE: "20221115"
+        # - GHIDRA_VERSION: "10.2.3"
+        #   GHIDRA_BUILD_DATE: "20230208"
+        # - GHIDRA_VERSION: "10.3"
+        #   GHIDRA_BUILD_DATE: "20230510"
+        # - GHIDRA_VERSION: "10.3.1"
+        #   GHIDRA_BUILD_DATE: "20230614"
+        # - GHIDRA_VERSION: "10.3.2"
+        #   GHIDRA_BUILD_DATE: "20230711"
+          - GHIDRA_VERSION: "10.3.3"
+            GHIDRA_BUILD_DATE: "20230829"
+          - GHIDRA_VERSION: "10.4"
+            GHIDRA_BUILD_DATE: "20230928"
+    env:
+      GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Get latest Ghidra version
+      env:
+        GHIDRA_URL: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${{ matrix.GHIDRA_VERSION }}_build/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC_${{ matrix.GHIDRA_BUILD_DATE }}.zip
+      run: |
+        echo "trying ${{ matrix.GHIDRA_VERSION }} on ${{ matrix.GHIDRA_BUILD_DATE }}"
+        mkdir ../Ghidra && wget --no-check-certificate -O ghidra.zip $GHIDRA_URL && unzip ghidra.zip && rm ghidra.zip && mv ghidra* ../Ghidra
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 8.5
+    - name: Execute Gradle build
+      env:
+        GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
+      run: |
+        gradle build
+        gradle
+    - name: Execute Gradle test and coverage
+      env:
+        GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
+      run: gradle test jacocoTestReport
+    - name: Archive PC Extension
+      uses: actions/upload-artifact@v3
+      with:
+        path: dist/*.zip
+    - name: Archive Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
+        path: build/reports/jacoco/test/*
+
+  # Bundle up a draft release if the version is tagged
+  release:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    needs: [build, build_rust, build_rust_mac_x86_64]
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+      - name: Make ouptut directory
+        run: mkdir output_release
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: output_release
+          merge-multiple: true
+      - name: Make zip
+        run: |
+          cd output_release
+          mkdir ../output_release_coverage
+          mv *_coverage_report ../output_release_coverage
+          mv pickled_canary_rust_tools_mac_x86_64/treesearchtool pickled_canary_rust_tools/treesearchtool_mac_x86_64
+          rmdir pickled_canary_rust_tools_mac_x86_64
+          mv artifact/* .
+          rmdir artifact
+          zip -r pickled_canary-${{ github.ref_name }}.zip *
+          ls -la
+          cp pickled_canary-${{ github.ref_name }}.zip ../
+          cd ../output_release_coverage
+          zip -r pickled_canary-coverage_reports-${{ github.ref_name }}.zip *
+          mv pickled_canary-coverage_reports-${{ github.ref_name }}.zip ../
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create --draft ${{ github.ref_name }}
+          "pickled_canary-${{ github.ref_name }}.zip"
+          "pickled_canary-coverage_reports-${{ github.ref_name }}.zip"
+          --title "Pickled Canary ${{ github.ref_name}}"
