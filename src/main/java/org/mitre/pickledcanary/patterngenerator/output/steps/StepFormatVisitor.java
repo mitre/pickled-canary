@@ -10,22 +10,21 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.mitre.pickledcanary.assembler.Assembler;
-import org.mitre.pickledcanary.assembler.Assemblers;
-import org.mitre.pickledcanary.assembler.AssemblySelector;
-import org.mitre.pickledcanary.assembler.AssemblySyntaxException;
-import org.mitre.pickledcanary.assembler.sleigh.parse.AssemblyParseResult;
-import org.mitre.pickledcanary.assembler.sleigh.sem.AssemblyOperandData;
-import org.mitre.pickledcanary.assembler.sleigh.sem.AssemblyPatternBlock;
-import org.mitre.pickledcanary.assembler.sleigh.sem.AssemblyResolution;
-import org.mitre.pickledcanary.assembler.sleigh.sem.AssemblyResolutionResults;
-import org.mitre.pickledcanary.assembler.sleigh.sem.AssemblyResolvedPatterns;
+
+import ghidra.app.plugin.processors.sleigh.SleighLanguage;
+import ghidra.asm.wild.WildOperandInfo;
+import ghidra.asm.wild.WildSleighAssembler;
+import ghidra.asm.wild.WildSleighAssemblerBuilder;
+import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
+import ghidra.app.plugin.assembler.AssemblySelector;
+import ghidra.app.plugin.assembler.sleigh.parse.AssemblyParseResult;
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyResolution;
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyResolutionResults;
 import org.mitre.pickledcanary.patterngenerator.output.FormatVisitor;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Data.DataType;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Step.StepType;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
-import org.mitre.pickledcanary.patterngenerator.output.utils.BitArray;
-import org.mitre.pickledcanary.patterngenerator.output.utils.Utils;
 import org.mitre.pickledcanary.querylanguage.lexer.ast.AnyBytesNode;
 import org.mitre.pickledcanary.querylanguage.lexer.ast.ByteNode;
 import org.mitre.pickledcanary.querylanguage.lexer.ast.InstructionNode;
@@ -40,7 +39,6 @@ import org.mitre.pickledcanary.querylanguage.lexer.ast.OrStartNode;
 import org.mitre.pickledcanary.search.Pattern;
 
 import ghidra.program.model.address.Address;
-import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
 
@@ -48,14 +46,14 @@ import ghidra.util.task.TaskMonitor;
  * Visitor for to generate Step pattern.
  */
 public class StepFormatVisitor implements FormatVisitor {
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = true;
 	private static final String WILDCARD = "*";
 
-	private final Program currentProgram;
 	private final Address currentAddress;
-	private final Assembler assembler;
-	private final AssemblyPatternBlock context;
+	private final WildSleighAssembler assembler;
 	private final TaskMonitor monitor;
+
+	private final SleighLanguage language;
 
 	// operand - binary representation tables
 	private AllLookupTables tables;
@@ -76,11 +74,11 @@ public class StepFormatVisitor implements FormatVisitor {
 	 * @param monitor
 	 */
 	public StepFormatVisitor(final Program currentProgram, final Address currentAddress, final TaskMonitor monitor) {
-		this.currentProgram = currentProgram;
 		this.currentAddress = currentAddress;
 		this.monitor = monitor;
-		this.assembler = Assemblers.getAssembler(currentProgram, new MyAssemblySelector());
-		this.context = assembler.getContextAt(currentAddress).fillMask();
+		this.language = (SleighLanguage) currentProgram.getLanguage();
+		WildSleighAssemblerBuilder builder = new WildSleighAssemblerBuilder(this.language);
+		this.assembler = builder.getAssembler(new AssemblySelector(), currentProgram);
 
 		this.tables = new AllLookupTables();
 		this.pushedTables = new ArrayList<>();
@@ -102,183 +100,173 @@ public class StepFormatVisitor implements FormatVisitor {
 		// memory-heavy stuff
 		System.gc();
 
-		// The binary representations of the instruction. Output of the assembler.
-		AssemblyResolutionResults assemblyResults;
-		try {
-			// Now assemble a block. A block can be given as an array of strings, or a
-			// string of newline-separated instructions.
-			// This will patch each resulting instruction into the bound program in
-			// sequence.
-			instructionNode.populateAddressIntoWildcards(currentAddress);
-			// Fill in AssemblyOperandData (metadata about operands) info here
-			assemblyResults = assembler.resolveLine(currentAddress, instructionNode, context, monitor);
-		} catch (AssemblySyntaxException e) {
-			throw new RuntimeException("Got error trying to parse instruction: " + instructionNode.toString()
-					+ "\n\nMake sure your assembly instructions are valid or that you are using a"
-					+ " binary with the same architecture.");
-		}
+		Collection<AssemblyParseResult> parses = assembler.parseLine(instructionNode.getInstructionText()).stream()
+				.filter(p -> !p.isError()).toList();
 
-		if (monitor.isCancelled()) {
-			return;
-		}
-
-		LookupStep lookupStep = new LookupStep();
-		int validInstructionCount = 0;
-		boolean allResultsForbidden = true;
-
-		// loop through binary representations for a concrete instruction
-		for (final AssemblyResolution assemblyResolution : assemblyResults) {
-			if (assemblyResolution.isError()) {
-				continue;
-			}
-
-			if (monitor.isCancelled()) {
-				return;
-			}
-
-			final AssemblyResolvedPatterns assemblyResolvedPatterns = (AssemblyResolvedPatterns) assemblyResolution;
-			final AssemblyPatternBlock assemblyPatternBlock = assemblyResolvedPatterns.getInstruction();
-			List<AssemblyOperandData> assemblyOperandDataList = new ArrayList<>();
-			if (!assemblyResolvedPatterns.checkNotForbidden().isError()) {
-				allResultsForbidden = false;
-				// get metadata about wildcarded operands to fill in json table
-				assemblyOperandDataList = assemblyResolvedPatterns.getOperandData().getWildcardOperandData();
-			}
-
-			// if there are variables that are the same in an instruction, make sure
-			// operands of those vars are the same before moving on
-			HashMap<String, String> wildcardValues = new HashMap<>();
-			boolean wildcardsMatch = true;
-			for (AssemblyOperandData assemblyOperandData : assemblyOperandDataList) {
-				String wildcardName = assemblyOperandData.getWildcardName();
-				if (!wildcardName.equals(WILDCARD)) {
-					if (!wildcardValues.containsKey(wildcardName)) {
-						wildcardValues.put(wildcardName, assemblyOperandData.getOperandName());
-					} else if (!wildcardValues.get(wildcardName).equals(assemblyOperandData.getOperandName())) {
-						wildcardsMatch = false;
-						break;
-					}
-				}
-			}
-			if (!wildcardsMatch) {
-				continue;
-			}
-
-			validInstructionCount += 1;
-
-			// Disassembler checking
-			if (DEBUG) {
-				Utils.assemblerDebug(currentProgram, currentAddress, assembler, assemblyPatternBlock.getVals());
-			}
-
-			BitArray fullMask = new BitArray(assemblyPatternBlock.getMask());
-
-			// remove mask of "Q" operands from the fullMask
-			BitArray noWildcardMask = fullMask;
-			for (AssemblyOperandData assemblyOperandData : assemblyOperandDataList) {
-				BitArray wildcardMask = new BitArray(assemblyOperandData.getMask());
-				noWildcardMask = wildcardMask.not().and(noWildcardMask);
-			}
-			List<Integer> noWildcardMaskList = noWildcardMask.toIntList(); // mask for data in json
-
-			// loop through binary representations of a concrete instruction (some
-			// AssemblyResolutions contain more than one binary representation)
-			for (byte[] val : assemblyPatternBlock.possibleVals()) {
-				BitArray valBitArr = new BitArray(val);
-
-				// value for InstructionEncoding in json
-				BitArray noWildcardVal = valBitArr.and(noWildcardMask);
-				List<Integer> noWildcardValList = noWildcardVal.toIntList();
-
-				String valStr = valBitArr.getBinary();
-
-				// build data instruction for json
-				// lookup step mask exists
-				if (lookupStep.hasMask(noWildcardMaskList)) {
-					Data data = lookupStep.getData(noWildcardMaskList);
-					if (data.type.equals(DataType.MaskAndChoose)) {
-						LookupData lookupData = (LookupData) data;
-						// if InstructionEncoding does not exist, make one
-						if (!lookupData.hasChoice(noWildcardValList)) {
-							InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
-							lookupData.putChoice(noWildcardValList, ie);
-						}
-						lookupStep.putData(noWildcardMaskList, lookupData);
-					}
-				} else {
-					// no LookupData or InstructionEncoding -- make both
-					InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
-					LookupData lookupData = new LookupData(noWildcardMaskList);
-					lookupData.putChoice(noWildcardValList, ie);
-					lookupStep.putData(noWildcardMaskList, lookupData);
-				}
-
-				for (AssemblyOperandData assemblyOperandData : assemblyOperandDataList) {
-					if (assemblyOperandData.getWildcardName().equals(WILDCARD)) {
-						continue;
-					}
-					BitArray wildcardMask = new BitArray(assemblyOperandData.getMask());
-
-					// get key of table
-					BitArray wildcardMaskKey = new BitArray(assemblyOperandData.getMask().length);
-					for (AssemblyOperandData aod : assemblyOperandDataList) {
-						wildcardMaskKey = wildcardMaskKey.or(new BitArray(aod.getMask()));
-					}
-					String maskStr = wildcardMaskKey.getBinary();
-					String tableKey = Utils.maskToX(maskStr, valStr) + "_" + assemblyOperandData.getWildcardIdx();
-
-					int operandType = assemblyOperandData.getOperandType();
-
-					if (!OperandType.isScalar(operandType)) {
-						// get the current operand
-						String operand = assemblyOperandData.getOperandName();
-						// get binary masks and values of operand above
-						// tableVals[0] is masks, tableVals[1] is values
-						List<List<Integer>> tableVals = Utils.binToDecMaskVal(wildcardMask.toByteArray(), val);
-
-						/// ----------------------------
-						// put mapping of operand to masks and values in table named tableKey
-						if (DEBUG) {
-							System.out.println("Inserting mask and value of operand into table:\n\tTable name: "
-									+ tableKey + "\n\tOperand name: " + operand + "\n\tOperand mask: "
-									+ tableVals.get(0) + "\n\tOperand value: " + tableVals.get(1));
-						}
-						tables.put(tableKey, operand, tableVals.get(0), tableVals.get(1));
-						/// ----------------------------
-					}
-
-					// add operand to json
-					OperandMeta ot;
-					if (OperandType.isScalar(operandType)) {
-						ot = new ScalarOperandMeta(wildcardMask.toIntList(), assemblyOperandData.getWildcardName(),
-								assemblyOperandData.getWildcardIdx(), assemblyOperandData.getExpression());
-					} else {
-						ot = new FieldOperandMeta(wildcardMask.toIntList(), tableKey,
-								assemblyOperandData.getWildcardName(), assemblyOperandData.getWildcardIdx());
-					}
-					Data data = lookupStep.getData(noWildcardMaskList);
-					if (data.type.equals(DataType.MaskAndChoose)) {
-						LookupData lookupData = (LookupData) data;
-						InstructionEncoding ie = lookupData.getChoice(noWildcardValList);
-						if (!ie.matches(ot)) {
-							ie.addOperand(ot);
-						}
-					}
-				}
-			}
-		}
-
-		this.steps.add(lookupStep);
-
-		if (validInstructionCount == 0) {
+		if (parses.size() == 0) {
 			throw new RuntimeException("An assembly instruction in your pattern (" + instructionNode.toString()
 					+ ") did not return any output. Make sure your assembly instructions"
 					+ " are valid or that you are using a binary with the same architecture.");
 		}
 
-		if (allResultsForbidden) {
-			System.out.println("WARNING: All results for this step are forbidden. Verify that your output is correct.");
+		LookupStep lookupStep = new LookupStep();
+
+		for (AssemblyParseResult p : parses) {
+			System.err.println("parse: " + p);
+			AssemblyResolutionResults results = assembler.resolveTree(p, currentAddress);
+
+			if (monitor.isCancelled()) {
+				return;
+			}
+
+			resultsLoop:
+			for (AssemblyResolution res : results) {
+				if (res instanceof WildAssemblyResolvedPatterns pats) {
+					AssemblyPatternBlock assemblyPatternBlock = pats.getInstruction();
+					System.err.println(assemblyPatternBlock);
+
+					AssemblyPatternBlock noWildcardMask = assemblyPatternBlock.copy();
+
+					// In some cases (e.g. "SHRD EAX,EBX,`Q1[..]`" in x86 32 bit) the instruction 
+					// returned by getInstruction is shorter than the location mask of some of that 
+					// instruction's operands. This block checks if that's the case and if so, 
+					// lengthens the instruction to fit its operands.
+					int maxOperandLocationLength = pats.getOperandInfo()
+							.stream()
+							.map((x) -> x.location().getMaskAll().length)
+							.max(Integer::compare)
+							.orElse(0);
+					System.out.println(maxOperandLocationLength);
+					if (noWildcardMask.getMaskAll().length < maxOperandLocationLength) {
+						noWildcardMask = assemblyPatternBlock
+								.combine(AssemblyPatternBlock.fromLength(maxOperandLocationLength));
+					}
+
+					HashMap<String, Object> operandChoices = new HashMap<String, Object>();
+					for (WildOperandInfo info : pats.getOperandInfo()) {
+						// remove masks of wildcards from the full instruction
+						noWildcardMask = noWildcardMask.maskOut(info.location());
+
+						// Just skip over instructions which have the same wildcard twice but with
+						// different choices
+						if (operandChoices.containsKey(info.wildcard())) {
+							if (operandChoices.get(info.wildcard()) != info.choice()) {
+								continue resultsLoop;
+							}
+						} else {
+							operandChoices.put(info.wildcard(), info.choice());
+						}
+					}
+
+					List<Integer> noWildcardMaskList = integerList(noWildcardMask.getMaskAll());
+					List<Integer> noWildcardValList = integerList(noWildcardMask.getValsAll());
+
+					// build data instruction for json
+					// lookup step mask exists
+					if (lookupStep.hasMask(noWildcardMaskList)) {
+						Data data = lookupStep.getData(noWildcardMaskList);
+						if (data.type.equals(DataType.MaskAndChoose)) {
+							LookupData lookupData = (LookupData) data;
+							// if InstructionEncoding does not exist, make one
+							if (!lookupData.hasChoice(noWildcardValList)) {
+								InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
+								lookupData.putChoice(noWildcardValList, ie);
+							}
+							lookupStep.putData(noWildcardMaskList, lookupData);
+						}
+					} else {
+						// no LookupData or InstructionEncoding -- make both
+						InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
+						LookupData lookupData = new LookupData(noWildcardMaskList);
+						lookupData.putChoice(noWildcardValList, ie);
+						lookupStep.putData(noWildcardMaskList, lookupData);
+					}
+
+					// TODO: Remove wildcardIdx (here and in where it was being passed)
+					var wildcardIdx = 0;
+					for (WildOperandInfo assemblyOperandData : pats.getOperandInfo()) {
+						if (assemblyOperandData.wildcard().compareTo(WILDCARD) == 0) {
+//							wildcardIdx += 1;
+							continue;
+						}
+
+						List<Integer> wildcardMask = integerList(assemblyOperandData.location().getMaskAll());
+						while (wildcardMask.size() < assemblyPatternBlock.length()) {
+							wildcardMask.add(0);
+						}
+
+						// get key of table
+						String tableKey = noWildcardMask.toString() + "_" + wildcardIdx;
+
+						// It's not a scalar operand
+						if (assemblyOperandData.choice() != null) {
+							// get the current operand
+							String operand = assemblyOperandData.choice().toString();
+
+							var z = assemblyOperandData.location();
+
+							// get binary masks and values of operand above
+							// tableVals[0] is masks, tableVals[1] is values
+							List<List<Integer>> tableVals = new ArrayList<List<Integer>>(2);
+							tableVals.add(integerList(z.trim().getMaskAll()));
+							tableVals.add(integerList(z.getMaskedValue(assemblyPatternBlock.getValsAll()).trim().getValsAll()));
+
+							/// ----------------------------
+							// put mapping of operand to masks and values in table named tableKey
+							if (DEBUG) {
+								System.out.println("Inserting mask and value of operand into table:\n\tTable name: "
+										+ tableKey + "\n\tOperand name: " + operand + "\n\tOperand mask: "
+										+ tableVals.get(0) + "\n\tOperand value: " + tableVals.get(1));
+							}
+							tables.put(tableKey, operand, tableVals.get(0), tableVals.get(1));
+							/// ----------------------------
+						}
+
+						// add operand to json
+						OperandMeta ot;
+						if (assemblyOperandData.choice() == null) {
+							ot = new ScalarOperandMeta(wildcardMask, assemblyOperandData.wildcard(),
+									assemblyOperandData.expression());
+						} else {
+							ot = new FieldOperandMeta(wildcardMask, tableKey, assemblyOperandData.wildcard());
+						}
+						Data data = lookupStep.getData(noWildcardMaskList);
+						if (data.type.equals(DataType.MaskAndChoose)) {
+							LookupData lookupData = (LookupData) data;
+							InstructionEncoding ie = lookupData.getChoice(noWildcardValList);
+							if (!ie.matches(ot)) {
+								ie.addOperand(ot);
+							}
+						}
+//						wildcardIdx += 1;
+					}
+				}
+			}
 		}
+
+		if (lookupStep.isEmpty()) {
+			throw new RuntimeException("An assembly instruction in your pattern (" + instructionNode.toString()
+			+ ") did not return any output. Make sure your assembly instructions"
+			+ " are valid or that you are using a binary with the same architecture.");
+		}
+		this.steps.add(lookupStep);
+	}
+	
+	/**
+	 * Get a list of integers from a byte array.
+	 * 
+	 * <p>
+	 * Bytes are interpreted as UNSIGNED integers.
+	 * 
+	 * @param input
+	 * @return
+	 */
+	List<Integer> integerList(byte [] input) {
+		List<Integer> out = new ArrayList<Integer>(input.length);
+		for (int i = 0; i < input.length; i++) {
+			out.add(java.lang.Byte.toUnsignedInt(input[i]));
+		}
+		return out;
 	}
 
 	// create json output for AnyByte instructions
@@ -420,29 +408,5 @@ public class StepFormatVisitor implements FormatVisitor {
 			}
 		}
 		return new Pattern(this.steps, tables.getPatternTables());
-	}
-
-	/**
-	 * The only difference between this class and the one it extends is the fact
-	 * that this one only provides an empty string in its AssemblySyntaxException
-	 * rather than a complete listing of all the errors
-	 */
-	static class MyAssemblySelector extends AssemblySelector {
-		@Override
-		public Collection<AssemblyParseResult> filterParse(Collection<AssemblyParseResult> parse)
-				throws AssemblySyntaxException {
-			boolean gotOne = false;
-			for (AssemblyParseResult pr : parse) {
-				if (pr.isError()) {
-					// syntaxErrors.add(pr);
-				} else {
-					gotOne = true;
-				}
-			}
-			if (!gotOne) {
-				throw new AssemblySyntaxException("");
-			}
-			return parse;
-		}
 	}
 }

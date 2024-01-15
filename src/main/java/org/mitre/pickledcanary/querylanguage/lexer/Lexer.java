@@ -351,8 +351,8 @@ public class Lexer {
 		}
 
 		if (start_or_count != end_or_count) {
-			throw new RuntimeException("There are not an equal number of `START_OR` (" + start_or_count
-					+ ") and `END_OR` (\"+end_or_count +\") tokens in your pattern");
+			throw new RuntimeException("There are not an equal number of `START_OR` (" +
+				start_or_count + ") and `END_OR` (" + end_or_count + ") tokens in your pattern");
 		}
 		if (or_count < end_or_count) {
 			throw new RuntimeException("There are fewer `OR` (" + or_count + ") tokens than `START_OR` and `END_OR` ("

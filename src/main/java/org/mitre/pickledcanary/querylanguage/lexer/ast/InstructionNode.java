@@ -93,14 +93,16 @@ public class InstructionNode implements VisitableResolvedContentNode, VisitableP
 			String nodeStr = node.toString();
 			// If we're looking at a wildcard node, add entries to our wildcardMap for each
 			// character we're about to append to our stringValue
-			if (node instanceof WildcardNode) {
+			if (node instanceof WildcardNode wildNode) {
 				int nodeStrLen = nodeStr.length();
 				int baseStrLen = stringValue.length();
 				for (int nodeStrIdx = 0; nodeStrIdx < nodeStrLen; nodeStrIdx++) {
 					wildcardMap.put(baseStrLen + nodeStrIdx, (WildcardNode) node);
 				}
+				stringValue += "`" + wildNode.toString() + "`";
+			} else {
+				stringValue += nodeStr;
 			}
-			stringValue += nodeStr;
 		}
 		stringValueIsUpToDate = true;
 	}

@@ -43,3 +43,4 @@ Icon
 
 # Thumbnails
 ._*
+.DS_STORE

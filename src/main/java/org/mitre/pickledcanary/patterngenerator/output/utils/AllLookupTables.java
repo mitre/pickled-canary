@@ -48,11 +48,15 @@ public class AllLookupTables {
 	// map from LookupTable hash to its index in the list in E (above)
 	// used to determine table_id field in capture groups
 	private final HashMap<Integer, Integer> lookupTableHashToOutIdx;
+	
+	// final tables list in sorted order
+	private ArrayList<LookupTable> noDupTables;
 
 	public AllLookupTables() {
 		tables = new HashMap<>();
 		bitMaskToLookupTableHash = new HashMap<>();
 		lookupTableHashToOutIdx = new HashMap<>();
+		noDupTables = new ArrayList<>();
 	}
 
 	/**
@@ -77,7 +81,8 @@ public class AllLookupTables {
 		for (String key : tables.keySet()) {
 			bitMaskToLookupTableHash.put(key, tables.get(key).hashCode());
 		}
-		ArrayList<LookupTable> noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
+		noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
+		noDupTables.sort((a,b)-> a.compareTo(b));
 		for (int i = 0; i < noDupTables.size(); i++) {
 			lookupTableHashToOutIdx.put(noDupTables.get(i).hashCode(), i);
 		}
@@ -106,6 +111,7 @@ public class AllLookupTables {
 	 */
 	public JSONArray getJson() {
 		List<LookupTable> tablesOut = this.getPatternTables();
+		
 		JSONArray out = new JSONArray();
 		for (LookupTable t : tablesOut) {
 			out.put(t.getJson());
@@ -121,7 +127,6 @@ public class AllLookupTables {
 		if (bitMaskToLookupTableHash.size() == 0) {
 			this.populateStuff();
 		}
-		ArrayList<LookupTable> noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
-		return new ArrayList<>(noDupTables);
+		return noDupTables;
 	}
 }

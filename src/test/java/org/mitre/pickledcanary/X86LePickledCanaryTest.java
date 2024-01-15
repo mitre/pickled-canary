@@ -40,30 +40,31 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	private static final String labelInstruction = "`foo:`";
 	private static final String stepsForLabelInstruction = "{\"type\":\"LABEL\",\"value\":\"foo\"}";
 
-	private static final String simpleWildcardInstruction = "MOV EBP, `Q1/E.P/,$/4`";
+	private static final String simpleWildcardInstruction = "MOV EBP, `Q1/E.P`";
 	private static final String simpleWildcardAgainInstruction = "MOV EBP, `Q1`";
 	private static final String stepsForSimpleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,197]}],\"mask\":[255,199]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]}],\"value\":[139,232]}],\"mask\":[255,248]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleWildcardInstruction = "{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}]}";
 
 	private static final String simpleWildcardInstruction2 = "LEA EAX, [ `Q1` + -0x6c ]";
-	private static final String stepsForSimpleWildcardInstruction2 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":2,\"mask\":[0,0,7,0,0,0,0]}],\"value\":[141,132,32,148,255,255,255]}],\"mask\":[255,255,56,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":3,\"mask\":[0,7,0]}],\"value\":[141,64,148]}],\"mask\":[255,248,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":3,\"mask\":[0,7,0,0,0,0]}],\"value\":[141,128,148,255,255,255]}],\"mask\":[255,248,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":5,\"mask\":[0,0,0,0]}],\"value\":[103,141,68,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,0,0,0]}],\"value\":[103,141,69,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":1,\"mask\":[0,0,0,0]}],\"value\":[103,141,70,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":4,\"mask\":[0,0,0,0]}],\"value\":[103,141,71,148]}],\"mask\":[255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":2,\"mask\":[0,0,7,0]}],\"value\":[141,68,32,148]}],\"mask\":[255,255,56,255]}],\"type\":\"LOOKUP\"}";
-	private static final String tablesForSimpleWildcardInstruction2 = "{\"DI\":[{\"value\":[0],\"mask\":[0]}]},{\"BP\":[{\"value\":[0],\"mask\":[0]}]},{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}],\"EDX\":[{\"value\":[2],\"mask\":[7]}],\"EBX\":[{\"value\":[3],\"mask\":[7]}],\"ESI\":[{\"value\":[6],\"mask\":[7]}],\"ECX\":[{\"value\":[1],\"mask\":[7]}],\"EDI\":[{\"value\":[7],\"mask\":[7]}],\"EAX\":[{\"value\":[0],\"mask\":[7]}]},{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"EDX\":[{\"value\":[2],\"mask\":[7]}],\"EBX\":[{\"value\":[3],\"mask\":[7]}],\"ESI\":[{\"value\":[6],\"mask\":[7]}],\"ECX\":[{\"value\":[1],\"mask\":[7]}],\"EDI\":[{\"value\":[7],\"mask\":[7]}],\"EAX\":[{\"value\":[0],\"mask\":[7]}]},{\"BX\":[{\"value\":[0],\"mask\":[0]}]},{\"SI\":[{\"value\":[0],\"mask\":[0]}]}";
+	private static final String stepsForSimpleWildcardInstruction2 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":5,\"mask\":[0,0,7,0,0,0,0]}],\"value\":[141,132,32,148,255,255,255]}],\"mask\":[255,255,56,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":4,\"mask\":[0,7,0]}],\"value\":[141,64,148]}],\"mask\":[255,248,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":4,\"mask\":[0,7,0,0,0,0]}],\"value\":[141,128,148,255,255,255]}],\"mask\":[255,248,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":3,\"mask\":[0,0,0,0]}],\"value\":[103,141,68,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":2,\"mask\":[0,0,0,0]}],\"value\":[103,141,69,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,0,0,0]}],\"value\":[103,141,70,148]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":1,\"mask\":[0,0,0,0]}],\"value\":[103,141,71,148]}],\"mask\":[255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":5,\"mask\":[0,0,7,0]}],\"value\":[141,68,32,148]}],\"mask\":[255,255,56,255]}],\"type\":\"LOOKUP\"}";
+	private static final String tablesForSimpleWildcardInstruction2 = "{\"BP\":[{\"value\":[],\"mask\":[]}]},{\"BX\":[{\"value\":[],\"mask\":[]}]},{\"DI\":[{\"value\":[],\"mask\":[]}]},{\"SI\":[{\"value\":[],\"mask\":[]}]},{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"EDX\":[{\"value\":[2],\"mask\":[7]}],\"EBX\":[{\"value\":[3],\"mask\":[7]}],\"ESI\":[{\"value\":[6],\"mask\":[7]}],\"ECX\":[{\"value\":[1],\"mask\":[7]}],\"EDI\":[{\"value\":[7],\"mask\":[7]}],\"EAX\":[{\"value\":[0],\"mask\":[7]}]},{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}],\"EDX\":[{\"value\":[2],\"mask\":[7]}],\"EBX\":[{\"value\":[3],\"mask\":[7]}],\"ESI\":[{\"value\":[6],\"mask\":[7]}],\"ECX\":[{\"value\":[1],\"mask\":[7]}],\"EDI\":[{\"value\":[7],\"mask\":[7]}],\"EAX\":[{\"value\":[0],\"mask\":[7]}]}";
 
-	private static final String simpleWildcardNoDelimiter2Instruction = "SHRD EAX,EBX,`Q1/0x.`";
+	private static final String simpleWildcardNoDelimiter2Instruction = "SHRD EAX,EBX,`Q1[..]`";
 	// The "expression" portion(s) of these steps have not been verified
 	private static final String stepsForSimpleWildcardNoDelimiter2Instruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":7,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":0,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,0,0,255]}],\"value\":[15,172,216,0]}],\"mask\":[255,255,255,0]}],\"type\":\"LOOKUP\"}";
 
-	private static final String simpleTrueWildcardInstruction = "MOV EBP,`*/E.P/,$/4`";
+	private static final String simpleTrueWildcardInstruction = "MOV EBP,`*/E.P`";
 	private static final String stepsForSimpleTrueWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[137,197]}],\"mask\":[255,199]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[139,232]}],\"mask\":[255,248]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleTrueWildcardInstruction = "";
 
-	private static final String simpleScalarWildcardInstruction = "MOV EBP,`Q1/0x./,$/4`";
+	private static final String simpleScalarWildcardInstruction = "MOV EBP,`Q1[..]`";
 	// The "expression" portion(s) of these steps have not been verified
 	private static final String stepsForSimpleScalarWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,255,255,255,255]}],\"value\":[189,0,0,0,0]}],\"mask\":[255,0,0,0,0]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,0,255,255,255,255]}],\"value\":[199,197,0,0,0,0]}],\"mask\":[255,255,0,0,0,0]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleScalarWildcardInstruction = "";
 
 	private static final String doubleWildcardInstruction = "MOV `Q1/E.P/,$/4`,`Q1`";
-	private static final String stepsForDoubleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]}],\"value\":[139,192]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,192]}],\"mask\":[255,192]}],\"type\":\"LOOKUP\"}";
+	private static final String stepsForDoubleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[139,192]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,192]}],\"mask\":[255,192]}],\"type\":\"LOOKUP\"}";
+	private static final String tablesForDoubleWildcardInstruction = "{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}]}";
 
 	private static final String negativeInstruction = "`NOT {`\n" + byteInstruction + "\n`} END_NOT`";
 	private static final String stepsForNegativeInstruction = "{\"pattern\":{\"tables\":[],\"steps\":["
@@ -166,7 +167,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	}
 
 	// This works... but it's slow... commenting out for now
-	private static final String simpleWildcardNoDelimiterInstruction = "MOV EBP,`Q1/0x.`";
+	private static final String simpleWildcardNoDelimiterInstruction = "MOV EBP,`Q1[..]`";
 	// The "expression" portion(s) of these steps have not been verified
 	private static final String stepsForSimpleWildcardNoDelimiterInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,255,255,255,255]}],\"value\":[189,0,0,0,0]}],\"mask\":[255,0,0,0,0]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,0,255,255,255,255]}],\"value\":[199,197,0,0,0,0]}],\"mask\":[255,255,0,0,0,0]}],\"type\":\"LOOKUP\"}";
 
@@ -200,7 +201,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 
 	@Test
 	public void testPatternDoubleWildcard() {
-		String testQueryPatternExpected = "{\"tables\":[" + tablesForSimpleWildcardInstruction + "],\"steps\":["
+		String testQueryPatternExpected = "{\"tables\":[" + tablesForDoubleWildcardInstruction + "],\"steps\":["
 				+ stepsForDoubleWildcardInstruction + "]";
 		generatePatternTestHelper(doubleWildcardInstruction, testQueryPatternExpected + getCompileInfo());
 	}
@@ -244,8 +245,8 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	public void testInvalidInstruction() {
 		final String testQuery = "XXXXX";
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Got error trying to parse instruction: " + testQuery
-				+ "\n\nMake sure your assembly instructions are valid or that you are using a binary with the same architecture.");
+		exceptionRule.expectMessage("An assembly instruction in your pattern (" + testQuery
+				+ ") did not return any output. Make sure your assembly instructions are valid or that you are using a binary with the same architecture.");
 		generatePatternTestHelper(testQuery, "");
 	}
 
@@ -325,5 +326,4 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 		String testQueryPatternExpected = "{\"tables\":[],\"steps\":[" + stepsForCallInstruction + "]";
 		generatePatternTestHelper(testQuery, testQueryPatternExpected + getCompileInfo());
 	}
-
 }

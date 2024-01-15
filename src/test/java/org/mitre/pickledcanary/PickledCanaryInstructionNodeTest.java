@@ -36,7 +36,7 @@ public class PickledCanaryInstructionNodeTest extends AbstractGhidraHeadlessInte
 
 		VisitableParseTreeNode node = (VisitableParseTreeNode) parseTree.stream().toArray()[0];
 
-		Assert.assertEquals("MOV EBP, Q1", node.toString());
+		Assert.assertEquals("MOV EBP, `Q1/E.P`", node.toString());
 
 		Assert.assertTrue(node instanceof InstructionNode);
 

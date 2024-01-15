@@ -198,4 +198,13 @@ public class WildcardNode extends InstructionComponentNode {
 	public Address getAnticipatedAddress() {
 		return this.anticipatedAddress;
 	}
+	
+	@Override
+	public String toString() {
+		var out = text;
+		if (initiator != null && !initiator.equals(".*")) {
+			out += "/" + initiator;
+		}
+		return out;
+	}
 }

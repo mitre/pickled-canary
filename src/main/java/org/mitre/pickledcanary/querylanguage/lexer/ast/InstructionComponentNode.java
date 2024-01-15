@@ -5,7 +5,7 @@ package org.mitre.pickledcanary.querylanguage.lexer.ast;
 
 public abstract class InstructionComponentNode implements ParseTreeNode {
 
-	private final String text;
+	protected final String text;
 
 	public InstructionComponentNode(final String text) {
 		this.text = text;
