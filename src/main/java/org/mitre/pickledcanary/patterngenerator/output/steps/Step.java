@@ -28,6 +28,10 @@ public abstract class Step {
 		out.put("type", this.stepType);
 		return out;
 	}
+	
+	public StepType getStepType() {
+		return this.stepType;
+	}
 
 	/**
 	 * If this step can jump or branch to another step other than the next step
