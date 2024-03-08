@@ -41,7 +41,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	private static final String stepsForLabelInstruction = "{\"type\":\"LABEL\",\"value\":\"foo\"}";
 
 	private static final String simpleWildcardInstruction = "MOV EBP, `Q1/E.P`";
-	private static final String simpleWildcardAgainInstruction = "MOV EBP, `Q1`";
+	private static final String simpleWildcardAgainInstruction = "MOV EBP, `Q1/E.P`";
 	private static final String stepsForSimpleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,197]}],\"mask\":[255,199]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]}],\"value\":[139,232]}],\"mask\":[255,248]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleWildcardInstruction = "{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}]}";
 
@@ -62,7 +62,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	private static final String stepsForSimpleScalarWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,255,255,255,255]}],\"value\":[189,0,0,0,0]}],\"mask\":[255,0,0,0,0]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":31,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":3,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[0,0,255,255,255,255]}],\"value\":[199,197,0,0,0,0]}],\"mask\":[255,255,0,0,0,0]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleScalarWildcardInstruction = "";
 
-	private static final String doubleWildcardInstruction = "MOV `Q1/E.P/,$/4`,`Q1`";
+	private static final String doubleWildcardInstruction = "MOV `Q1/E.P`,`Q1`";
 	private static final String stepsForDoubleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[139,192]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,192]}],\"mask\":[255,192]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForDoubleWildcardInstruction = "{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}]}";
 
@@ -77,7 +77,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	private static final String anybytesInstructionInterval = "`ANY_BYTES{4,8,2}`";
 	private static final String stepsForAnybytesInstructionInterval = "{\"note\":\"AnyBytesNode Start: 4 End: 8 Interval: 2 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{4,8,2}`\",\"min\":4,\"max\":8,\"interval\":2,\"type\":\"ANYBYTESEQUENCE\"}";
 
-	private static final String metaInstruction = "`META`\n{\n;this comment shouldn't be included in the output\n\"foo\":\"bar\"\n}\n`META_END`"
+	private static final String metaInstruction = "`META`\n{\n;this comment shouldn't be included in the output\n\"foo\":\"bar\"\n}\n`META_END`\n"
 			+ byteMaskInstruction;
 	// Notice that this has the compile_info as well!!!
 	private static final String stepsForMetaInstruction = stepsForByteMaskInstruction
@@ -251,17 +251,6 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	}
 
 	@Test
-	public void testDuplicateWildcardWithRedefinition() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Variable \"Q1\" specifies FILTER or subsequent fields after"
-				+ " first use.\n\nOnly first wildcard with a given name may contain a FILTER (or"
-				+ " subsequent fields). Later wildcards with the same name use the same FILTER (and"
-				+ " subsequent fields) declared in that first wildcard.");
-		final String testQuery = simpleWildcardInstruction + "\n" + simpleWildcardInstruction;
-		generatePatternTestHelper(testQuery, "");
-	}
-
-	@Test
 	public void testPatternWithWildcardAgain() {
 		String testQueryPatternExpected = "{\"tables\":[" + tablesForSimpleWildcardInstruction + "],\"steps\":["
 				+ stepsForSimpleWildcardInstruction + "," + stepsForSimpleWildcardInstruction + "]";
@@ -272,15 +261,23 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testTwoStartMeta() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Cannot have more than one `META` tag");
+		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 6:1 token recognition error at: 'META`'");
 		final String testQuery = ";something\n`META`\n{\"foo\":\"bar\"\n}\n`META`\n`META`";
+		generatePatternTestHelper(testQuery, "");
+	}
+
+	@Test
+	public void testTwoMetaBlocks() {
+		exceptionRule.expect(RuntimeException.class);
+		exceptionRule.expectMessage("Can not have more than one META section!");
+		final String testQuery = ";something\n`META`\n{\"foo\":\"bar\"\n}\n`META_END`\n`META`\n{\"baz\":\"bop\"\n}\n`META_END`";
 		generatePatternTestHelper(testQuery, "");
 	}
 
 	@Test
 	public void testTwoEndMeta() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Cannot have more than one `META_END` tag");
+		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 7:1 token recognition error at: 'META_END`'");
 		final String testQuery = ";something\n`META`\n{\n\"foo\":\"bar\"\n}\n`META_END`\n`META_END`";
 		generatePatternTestHelper(testQuery, "");
 	}
@@ -288,7 +285,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testEndMetaBeforeMeta() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Cannot have closing `META_END` tag here. No opening `META` found previously");
+		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 1:1 token recognition error at: 'META_END`'");
 		final String testQuery = "`META_END`\n;something\n`META`\n{\n\"foo\":\"bar\"\n}\n`META_END`\n";
 		generatePatternTestHelper(testQuery, "");
 	}
@@ -296,7 +293,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testEmptyCommand() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Read an empty PickledCanaryCommand. Did you forget to fill it in?");
+		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 2:1 mismatched input '`' expecting {'=', '&', ANY_BYTES, LABEL, BYTE_STRING}");
 		final String testQuery = ";something\n``";
 		generatePatternTestHelper(testQuery, "");
 	}
@@ -304,7 +301,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testUnbalancedCommand() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("No start/end found to PickledCanaryCommand. Are your quotes balanced?");
+		exceptionRule.expectMessage("This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction. Check this line: 'MOV `'");
 		final String testQuery = ";something\nMOV `\n;foo";
 		generatePatternTestHelper(testQuery, "");
 	}

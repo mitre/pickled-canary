@@ -1,7 +1,7 @@
 
 // Copyright (C) 2023 The MITRE Corporation All Rights Reserved
 
-package ghidra.pickledcanary;
+package org.mitre.pickledcanary;
 
 import java.io.File;
 import java.util.List;

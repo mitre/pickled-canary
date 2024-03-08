@@ -128,9 +128,6 @@ public class ArmThumbLePickledCanaryTest extends PickledCanaryTest {
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
 				this.program.getMinAddress(), bnewPatternLabel);
 
-		System.out.println(PickledCanary.parseAndAssemble(monitor, this.program, this.program.getMinAddress(),
-				bnewPatternLabel, false));
-
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
 		Assert.assertEquals(this.program.getMinAddress().add(bnewOffset), result.getStart());

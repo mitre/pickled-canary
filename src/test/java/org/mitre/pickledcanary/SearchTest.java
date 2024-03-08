@@ -72,7 +72,7 @@ public class SearchTest extends PickledCanaryTest {
 	public void testCompileAndRunPattern() {
 		String patternIn = "tst r3,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				program.getMemory().getMinAddress(), patternIn);
+			program.getMemory().getMinAddress(), patternIn);
 		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
 		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
 	}
@@ -81,7 +81,7 @@ public class SearchTest extends PickledCanaryTest {
 	public void testCompileAndRunPatternWildcard() {
 		String patternIn = "tst `Q1`,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				program.getMemory().getMinAddress(), patternIn);
+			program.getMemory().getMinAddress(), patternIn);
 		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
 		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
 		Assert.assertEquals("r3", results.get(0).variables.get("Q1").getValue());
@@ -91,7 +91,7 @@ public class SearchTest extends PickledCanaryTest {
 	public void testCompileAndRunPatternLabel() {
 		String patternIn = "`=0x13`\n`foo:`\n`=0xe3`";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				this.program.getMinAddress(), patternIn);
+			this.program.getMinAddress(), patternIn);
 		Assert.assertEquals(this.program.getMinAddress().add(2), results.get(0).getStart());
 		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
 		Assert.assertEquals(this.program.getMinAddress().add(3), results.get(0).labels.get("foo"));

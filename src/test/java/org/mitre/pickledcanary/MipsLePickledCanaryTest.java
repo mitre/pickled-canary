@@ -15,14 +15,14 @@ public class MipsLePickledCanaryTest extends PickledCanaryTest {
 		return ",\"compile_info\":[{\"compiled_using_binary\":[{\"path\":[\"unknown\"],\"compiled_at_address\":[\"01006420\"],\"md5\":[\"unknown\"]}],\"language_id\":[\"MIPS:LE:32:default\"]}],\"pattern_metadata\":{}}";
 	}
 
-	private static final String simpleSuboperandInstruction = "lw v1,0xc8(`Q1/.*/,`)";
+	private static final String simpleSuboperandInstruction = "lw v1,0xc8(`Q1`)";
 	private static final String stepsForSimpleSuboperandInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,0,224,3]}],\"value\":[200,0,3,140]}],\"mask\":[255,255,31,252]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleSuboperandInstruction = "{\"t4\":[{\"value\":[128,1],\"mask\":[224,3]}],\"t5\":[{\"value\":[160,1],\"mask\":[224,3]}],\"t6\":[{\"value\":[192,1],\"mask\":[224,3]}],\"t7\":[{\"value\":[224,1],\"mask\":[224,3]}],\"t8\":[{\"value\":[0,3],\"mask\":[224,3]}],\"t9\":[{\"value\":[32,3],\"mask\":[224,3]}],\"zero\":[{\"value\":[0,0],\"mask\":[224,3]}],\"s0\":[{\"value\":[0,2],\"mask\":[224,3]}],\"sp\":[{\"value\":[160,3],\"mask\":[224,3]}],\"s1\":[{\"value\":[32,2],\"mask\":[224,3]}],\"s2\":[{\"value\":[64,2],\"mask\":[224,3]}],\"s3\":[{\"value\":[96,2],\"mask\":[224,3]}],\"s4\":[{\"value\":[128,2],\"mask\":[224,3]}],\"s5\":[{\"value\":[160,2],\"mask\":[224,3]}],\"s6\":[{\"value\":[192,2],\"mask\":[224,3]}],\"s7\":[{\"value\":[224,2],\"mask\":[224,3]}],\"k0\":[{\"value\":[64,3],\"mask\":[224,3]}],\"s8\":[{\"value\":[192,3],\"mask\":[224,3]}],\"k1\":[{\"value\":[96,3],\"mask\":[224,3]}],\"gp\":[{\"value\":[128,3],\"mask\":[224,3]}],\"a0\":[{\"value\":[128,0],\"mask\":[224,3]}],\"ra\":[{\"value\":[224,3],\"mask\":[224,3]}],\"a1\":[{\"value\":[160,0],\"mask\":[224,3]}],\"a2\":[{\"value\":[192,0],\"mask\":[224,3]}],\"a3\":[{\"value\":[224,0],\"mask\":[224,3]}],\"at\":[{\"value\":[32,0],\"mask\":[224,3]}],\"v0\":[{\"value\":[64,0],\"mask\":[224,3]}],\"v1\":[{\"value\":[96,0],\"mask\":[224,3]}],\"t0\":[{\"value\":[0,1],\"mask\":[224,3]}],\"t1\":[{\"value\":[32,1],\"mask\":[224,3]}],\"t2\":[{\"value\":[64,1],\"mask\":[224,3]}],\"t3\":[{\"value\":[96,1],\"mask\":[224,3]}]}";
 
 	private static final String heartbleed = 
 			"li a2,0x18\n"
 			+ "`ANY_BYTES{0,50}`\n"
-			+ "addiu `Q1/.*/,`,`*/.*/,`,0x13\n"
+			+ "addiu `Q1`,`*`,0x13\n"
 			+ "move a0,`Q1`\n"
 			+ "`ANY_BYTES{0,4}`\n"
 			+ "jalr `*`";
