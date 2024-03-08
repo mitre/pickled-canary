@@ -43,10 +43,9 @@ public class ScalarOperandMeta extends OperandMeta {
 	 * 
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
-	 * @param operandId the index of the operand in the instruction
 	 */
-	public ScalarOperandMeta(List<Integer> mask, String varId, int operandId, PatternExpression expression) {
-		super(TypeOfOperand.Scalar, mask, varId, operandId);
+	public ScalarOperandMeta(List<Integer> mask, String varId, PatternExpression expression) {
+		super(TypeOfOperand.Scalar, mask, varId);
 		this.expression = expression;
 	}
 

@@ -104,4 +104,8 @@ public class LookupStep extends StepBranchless {
 	public String toString() {
 		return "LookupStep(data: " + this.data.toString() + ")";
 	}
+	
+	public boolean isEmpty() {
+		return this.data.size() == 0;
+	}
 }

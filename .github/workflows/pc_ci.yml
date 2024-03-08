@@ -111,10 +111,14 @@ jobs:
         #   GHIDRA_BUILD_DATE: "20230614"
         # - GHIDRA_VERSION: "10.3.2"
         #   GHIDRA_BUILD_DATE: "20230711"
-          - GHIDRA_VERSION: "10.3.3"
-            GHIDRA_BUILD_DATE: "20230829"
-          - GHIDRA_VERSION: "10.4"
-            GHIDRA_BUILD_DATE: "20230928"
+        # - GHIDRA_VERSION: "10.3.3"
+        #   GHIDRA_BUILD_DATE: "20230829"
+        # - GHIDRA_VERSION: "10.4"
+        #   GHIDRA_BUILD_DATE: "20230928"
+        # - GHIDRA_VERSION: "11.0"
+        #   GHIDRA_BUILD_DATE: "20231222"
+          - GHIDRA_VERSION: "11.1"
+            GHIDRA_BUILD_DATE: "20240301" # TODO: This isn't released yet, so testing isn't going to work! Fix when WildcardAssembler is released
     env:
       GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
     steps:
@@ -169,7 +173,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: output_release
-          merge-multiple: true
       - name: Make zip
         run: |
           cd output_release

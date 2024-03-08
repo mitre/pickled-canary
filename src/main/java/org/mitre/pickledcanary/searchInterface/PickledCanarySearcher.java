@@ -17,7 +17,7 @@
  */
 
 /*
- * Based on Ghidra's sample SampleSearcher. 
+ * Based on Ghidra's sample SampleSearcher.
  */
 
 // Copyright (C) 2023 The MITRE Corporation All Rights Reserved
@@ -30,7 +30,7 @@ import java.util.ArrayList;
 
 import org.json.JSONObject;
 import org.mitre.pickledcanary.PickledCanary;
-import org.mitre.pickledcanary.querylanguage.lexer.ParseTree;
+import org.mitre.pickledcanary.patterngenerator.PCVisitor;
 import org.mitre.pickledcanary.search.Pattern;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 
@@ -48,7 +48,7 @@ public class PickledCanarySearcher {
 	private final Address currentAddress;
 	private String query;
 	private boolean removeDebugFlag;
-	private ParseTree patternParseTree;
+	private PCVisitor visitor;
 	private final ArrayList<TextListener> listeners = new ArrayList<>();
 	private String compiledPattern = NotCompiledString; // keeps track of if the pattern is compiling or not
 
@@ -72,21 +72,18 @@ public class PickledCanarySearcher {
 		this.notifyListeners();
 
 		// Parse and compile our pattern to json (and tell everyone who cares)
-		this.patternParseTree = PickledCanary.parsePattern(monitor, query);
-		JSONObject o;
-		if (this.removeDebugFlag) {
-			o = new JSONObject(PickledCanary.assemble(monitor, this.program, this.currentAddress, this.patternParseTree,
-					this.removeDebugFlag));
-		} else {
-			o = new JSONObject(
-					PickledCanary.assemble(monitor, this.program, this.currentAddress, this.patternParseTree));
-		}
+		this.visitor = PickledCanary.createAndRunVisitor(monitor, query, program, currentAddress);
+
+		JSONObject o = this.visitor.getJSONObject(removeDebugFlag);
+
 		this.compiledPattern = o.toString(4);
 		this.notifyListeners();
 
-		// Now assemble our pattern into a Java-runnable pattern and run it
-		Pattern pattern = PickledCanary.assemblePatternWrapped(monitor, program, currentAddress, this.patternParseTree);
-		PickledCanary.runAll(monitor, program, pattern, accumulator);
+		// Now assemble our pattern into a Java-runnable pattern
+		Pattern patternCompiled = this.visitor.getPatternWrapped();
+
+		// Run the pattern
+		PickledCanary.runAll(monitor, program, patternCompiled, accumulator);
 
 		monitor.setIndeterminate(false);
 	}

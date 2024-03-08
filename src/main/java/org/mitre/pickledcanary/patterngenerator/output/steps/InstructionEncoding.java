@@ -32,18 +32,13 @@ public class InstructionEncoding {
 	 * @param operand operand to be placed in the operands list
 	 * @return true if an operand with the same varId exists and their types and
 	 *         masks match; false if no operand with same varId exists
-	 * @throws RuntimeException operand with same varId exists but type or mask
-	 *                          don't match
 	 */
 	public boolean matches(OperandMeta operand) {
 		for (OperandMeta om : operands) {
-			if (operand.operandId == om.operandId && operand.varId.equals(om.varId)) {
-				if (operand.type == om.type && operand.mask.equals(om.mask)) {
-					return true;
-				}
-				throw new RuntimeException("Operands do not match.\n\tVar ID: " + om.varId + "\nOperand 1 type: "
-						+ om.type + "\tOperand 1 mask: " + om.mask + "\nOperand 2 type: " + operand.type
-						+ "\tOperand 2 mask: " + operand.mask);
+			if (operand.varId.equals(om.varId) && operand.type == om.type &&
+				operand.mask.equals(om.mask)) {
+				return true;
+
 			}
 		}
 		return false;
@@ -64,6 +59,8 @@ public class InstructionEncoding {
 
 	public JSONObject getJson() {
 		JSONArray operandArr = new JSONArray();
+
+		operands.sort((a,b) -> a.compareTo(b));
 		for (OperandMeta ot : operands) {
 			operandArr.put(ot.getJson());
 		}

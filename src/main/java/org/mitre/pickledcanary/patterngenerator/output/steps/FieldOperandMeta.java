@@ -19,10 +19,9 @@ public class FieldOperandMeta extends OperandMeta {
 	 * @param mask      Mask of a specific operand
 	 * @param tableKey  temporary table key
 	 * @param varId     variable ID (Q1) of operand
-	 * @param operandId the index of the operand in the instruction
 	 */
-	public FieldOperandMeta(List<Integer> mask, String tableKey, String varId, int operandId) {
-		super(TypeOfOperand.Field, mask, varId, operandId);
+	public FieldOperandMeta(List<Integer> mask, String tableKey, String varId) {
+		super(TypeOfOperand.Field, mask, varId);
 		this.tableKey = tableKey;
 	}
 

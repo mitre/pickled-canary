@@ -10,7 +10,7 @@ import org.json.JSONObject;
 /**
  * Represents operand choices for wildcards in the output json.
  */
-public abstract class OperandMeta {
+public abstract class OperandMeta implements Comparable<OperandMeta>{
 
 	public enum TypeOfOperand {
 		Field, Scalar
@@ -19,7 +19,6 @@ public abstract class OperandMeta {
 	protected final TypeOfOperand type;
 	protected final List<Integer> mask;
 	protected final String varId;
-	protected final int operandId;
 
 	/**
 	 * OperandMeta
@@ -27,13 +26,11 @@ public abstract class OperandMeta {
 	 * @param type      TypeOfOperand
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
-	 * @param operandId the index of the operand in the instruction
 	 */
-	public OperandMeta(TypeOfOperand type, List<Integer> mask, String varId, int operandId) {
+	public OperandMeta(TypeOfOperand type, List<Integer> mask, String varId) {
 		this.type = type;
 		this.mask = mask;
 		this.varId = varId;
-		this.operandId = operandId;
 	}
 
 	public TypeOfOperand getType() {
@@ -57,7 +54,23 @@ public abstract class OperandMeta {
 	}
 
 	public String toString() {
-		return "OperandMeta(varId: " + this.varId + ", type:" + this.type.toString() + ", operandId: " + this.operandId
-				+ ", mask: " + this.mask.toString() + ")";
+		return "OperandMeta(varId: " + this.varId + ", type:" + this.type.toString() + ", mask: " +
+			this.mask.toString() + ")";
+	}
+	
+	public int compareTo(OperandMeta other) {
+		var out = this.varId.compareTo(other.varId);
+		if (out != 0) {
+			return out;
+		}
+		
+		for (var i = 0; i < Math.min(this.mask.size(), other.mask.size()); i++) {
+			out = this.mask.get(i).compareTo(other.mask.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+		
+		return Integer.valueOf(this.mask.size()).compareTo(Integer.valueOf(other.mask.size()));
 	}
 }

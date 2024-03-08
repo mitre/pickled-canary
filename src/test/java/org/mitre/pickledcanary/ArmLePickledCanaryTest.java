@@ -21,22 +21,48 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	protected String getCompileInfoRaw() {
 		return ",\"compile_info\":[{\"compiled_using_binary\":[{\"path\":[\"unknown\"],\"compiled_at_address\":[\"01006420\"],\"md5\":[\"unknown\"]}],\"language_id\":[\"ARM:LE:32:v8\"]}],\"pattern_metadata\":{}}";
 	}
+	
+	private static final String simplePattern = "`=0x55`\n`&0x0f=0xab`\n`ANY_BYTES{0,4,2}`\n";
+	private static final String stepsForSimplePattern = "{\"type\":\"BYTE\",\"value\":85},{\"type\":\"MASKEDBYTE\",\"value\":171,\"mask\":15},{\"note\":\"AnyBytesNode Start: 0 End: 4 Interval: 2 From: Token from line #3: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,4,2}`\",\"min\":0,\"max\":4,\"interval\":2,\"type\":\"ANYBYTESEQUENCE\"}";
 
-	private static final String simpleSuboperandInstruction = "mov `Q1/[lr]./,/3`,#0x0";
+	private static final String simpleOrPattern = "`=0xAA`\r\n" + 
+			"`START_OR {`\r\n" + 
+			"  `=0xBB`\r\n" + 
+			"  `=0xCC`\r\n" + 
+			"`} OR {`\r\n" + 
+			"  `=0x01`\r\n" + 
+			"  `=0x02`\r\n" + 
+			"`} END_OR`";
+	private static final String stepsForSimpleOrPattern = "{\"type\":\"BYTE\",\"value\":170},{\"dest2\":5,\"type\":\"SPLIT\",\"dest1\":2},{\"type\":\"BYTE\",\"value\":187},{\"type\":\"BYTE\",\"value\":204},{\"type\":\"JMP\",\"dest\":7},{\"type\":\"BYTE\",\"value\":1},{\"type\":\"BYTE\",\"value\":2}";
+	
+	private static final String simpleMetadataPattern = "`META`\r\n" + 
+			"{ 'foo': 'bar',\r\n" + 
+			"  'baz':'boop'}\r\n" + 
+			"`META_END`";
+	private static final String stepsForSimpleMetadataPattern = "";
+
+	private static final String simpleNotPattern = "`NOT {`\r\n" + 
+			"`=0xaa`\r\n" + 
+			"`} END_NOT`";
+	private static final String stepsForSimpleNotPattern = "{\"pattern\":{\"tables\":[],\"steps\":[{\"type\":\"BYTE\",\"value\":170},{\"type\":\"MATCH\"}],\"pattern_metadata\":{}},\"type\":\"NEGATIVELOOKAHEAD\"}";
+
+	private static final String simpleByteStringPattern = "`\"abc\"`";
+	private static final String stepsForSimpleByteStringPattern = "{\"type\":\"BYTE\",\"value\":97},{\"type\":\"BYTE\",\"value\":98},{\"type\":\"BYTE\",\"value\":99}";
+
+	
+	private static final String simpleSuboperandInstruction = "mov `Q1/[lr].`,#0x0";
 	private static final String stepsForSimpleSuboperandInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,240,0,0]}],\"value\":[0,0,160,227]}],\"mask\":[255,15,255,255]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForSimpleSuboperandInstruction = "{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"lr\":[{\"value\":[14],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]}";
 
 	// tests backfills
-	private static final String twoWildcardsInstruction = "bfc r3,#`Q1/.*/,`,#`Q2/.*/,`";
+	private static final String twoWildcardsInstruction = "bfc r3,#`Q1`,#`Q2`";
 	// The "expression" portion(s) of these steps have not been verified
-	private static final String stepsForTwoWildcardsInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[128,15,0,0]},{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":20,\"shift\":0,\"signbit\":false,\"bitstart\":16,\"byteend\":2,\"bigendian\":false,\"bytestart\":2}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"right\":{\"op\":\"ConstantValue\",\"value\":1}}},\"var_id\":\"Q2\",\"type\":\"Scalar\",\"mask\":[0,0,31,0]}],\"value\":[31,48,192,231]},{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[128,15,0,0]},{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":20,\"shift\":0,\"signbit\":false,\"bitstart\":16,\"byteend\":2,\"bigendian\":false,\"bytestart\":2}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"right\":{\"op\":\"ConstantValue\",\"value\":1}}},\"var_id\":\"Q2\",\"type\":\"Scalar\",\"mask\":[0,0,31,0]}],\"value\":[31,48,192,247]}],\"mask\":[127,240,224,255]}],\"type\":\"LOOKUP\"}";
-	// These are the steps for Ghidra 10.1 (seems like the arm processor spec was
-	// probably updated)
-	private static final String stepsForTwoWildcardsInstruction_101 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[128,15,0,0]},{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":20,\"shift\":0,\"signbit\":false,\"bitstart\":16,\"byteend\":2,\"bigendian\":false,\"bytestart\":2}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"right\":{\"op\":\"ConstantValue\",\"value\":1}}},\"var_id\":\"Q2\",\"type\":\"Scalar\",\"mask\":[0,0,31,0]}],\"value\":[31,48,192,231]}],\"mask\":[127,240,224,255]}],\"type\":\"LOOKUP\"}";
+	// TODO: The MASK for Q2 changed with the new wildcard assembler
+	private static final String stepsForTwoWildcardsInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}},\"var_id\":\"Q1\",\"type\":\"Scalar\",\"mask\":[128,15,0,0]},{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":20,\"shift\":0,\"signbit\":false,\"bitstart\":16,\"byteend\":2,\"bigendian\":false,\"bytestart\":2}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":7,\"signbit\":false,\"bitstart\":7,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"right\":{\"op\":\"ConstantValue\",\"value\":1}}},\"var_id\":\"Q2\",\"type\":\"Scalar\",\"mask\":[128,15,31,0]}],\"value\":[31,48,192,231]}],\"mask\":[127,240,224,255]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForTwoWildcardsInstruction = "";
 
 	private static final String instructionsWithWildcards =
-			"mov `Q3/r./,/4`,#0x200\n" +
+			"mov `Q3/r.`,#0x200\n" +
 			"`ANY_BYTES{4,16,2}`\n" +
 			"sub `Q3`,`Q3`,#0x200\n" +
 			"`ANY_BYTES{0,16,3}`\n" +
@@ -47,6 +73,10 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	// This variation works with Ghidra 10.2 (prior works with older versions)
 	private static final String stepsForInstructionsWithWildcards_evenNewer = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,240,0,0]}],\"value\":[2,12,160,227]}],\"mask\":[255,15,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 4 End: 16 Interval: 2 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{4,16,2}`\",\"min\":4,\"max\":16,\"interval\":2,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,240,0,0]},{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,0,15,0]}],\"value\":[2,12,64,226]}],\"mask\":[255,15,240,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 0 End: 16 Interval: 3 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,16,3}`\",\"min\":0,\"max\":16,\"interval\":3,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[99,32,224,227]}],\"mask\":[255,255,255,255]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForInstructionsWithWildcards = "{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]}";
+	private static final String stepsForInstructionsWithWildcards112 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,240,0,0]}],\"value\":[2,12,160,227]}],\"mask\":[255,15,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 4 End: 16 Interval: 2 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{4,16,2}`\",\"min\":4,\"max\":16,\"interval\":2,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":1,\"mask\":[0,0,15,0]},{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":1,\"mask\":[0,240,0,0]}],\"value\":[2,12,64,226]}],\"mask\":[255,15,240,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 0 End: 16 Interval: 3 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,16,3}`\",\"min\":0,\"max\":16,\"interval\":3,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[99,32,224,227]}],\"mask\":[255,255,255,255]}],\"type\":\"LOOKUP\"}";
+	private static final String tablesForInstructionsWithWildcards112 = "{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]},{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"lr\":[{\"value\":[14],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r10\":[{\"value\":[10],\"mask\":[15]}],\"r12\":[{\"value\":[12],\"mask\":[15]}],\"r11\":[{\"value\":[11],\"mask\":[15]}],\"sp\":[{\"value\":[13],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]}";
+	//	private static final String stepsForInstructionsWithWildcards = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":1,\"mask\":[0,240,0,0]}],\"value\":[2,12,160,227]}],\"mask\":[255,15,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 4 End: 16 Interval: 2 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{4,16,2}`\",\"min\":4,\"max\":16,\"interval\":2,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,0,15,0]},{\"var_id\":\"Q3\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,240,0,0]}],\"value\":[2,12,64,226]}],\"mask\":[255,15,240,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 0 End: 16 Interval: 3 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,16,3}`\",\"min\":0,\"max\":16,\"interval\":3,\"type\":\"ANYBYTESEQUENCE\"},{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[99,32,224,227]}],\"mask\":[255,255,255,255]}],\"type\":\"LOOKUP\"}";
+//	private static final String tablesForInstructionsWithWildcards = "{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"lr\":[{\"value\":[14],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r10\":[{\"value\":[10],\"mask\":[15]}],\"r12\":[{\"value\":[12],\"mask\":[15]}],\"r11\":[{\"value\":[11],\"mask\":[15]}],\"sp\":[{\"value\":[13],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]},{\"r2\":[{\"value\":[2],\"mask\":[15]}],\"r3\":[{\"value\":[3],\"mask\":[15]}],\"r4\":[{\"value\":[4],\"mask\":[15]}],\"r5\":[{\"value\":[5],\"mask\":[15]}],\"r6\":[{\"value\":[6],\"mask\":[15]}],\"r7\":[{\"value\":[7],\"mask\":[15]}],\"r8\":[{\"value\":[8],\"mask\":[15]}],\"r9\":[{\"value\":[9],\"mask\":[15]}],\"r0\":[{\"value\":[0],\"mask\":[15]}],\"r1\":[{\"value\":[1],\"mask\":[15]}]}";
 
 	private static final String bneInstruction = "bne `*`";
 	private static final String tablesForBneInstruction = "";
@@ -54,8 +84,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 
 	private static final String ldrInstruction = "ldr r3, [`:foo`]\n";
 	private static final String tablesForLdrInstruction = "";
-	private static final String stepsForLdrInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"}";
-	private static final String stepsForLdrInstruction_pre1014 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]},{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,245]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,245]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"}";
+	private static final String stepsForLdrInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]},{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"}";
 
 	// this shouldn't match with the second mov in our data (because that mov has a
 	// different first register). but should instead span to the third mov
@@ -93,9 +122,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 			"`foo:`\n" +
 			"`ANY_BYTES{1,1}`";
 	private static final String tablesForLdrPatternLabel = "";
-	private static final String stepsForLdrPatternLabel = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 8 End: 8 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{8,8}`\",\"min\":8,\"max\":8,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"},{\"type\":\"LABEL\",\"value\":\"foo\"},{\"note\":\"AnyBytesNode Start: 1 End: 1 Interval: 1 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{1,1}`\",\"min\":1,\"max\":1,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"}";
-	// This is unverified but makes the test pass:
-	private static final String stepsForLdrPatternLabel1003 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]},{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,245]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]},{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,245]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 8 End: 8 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{8,8}`\",\"min\":8,\"max\":8,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"},{\"type\":\"LABEL\",\"value\":\"foo\"},{\"note\":\"AnyBytesNode Start: 1 End: 1 Interval: 1 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{1,1}`\",\"min\":1,\"max\":1,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"}";
+	private static final String stepsForLdrPatternLabel = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"expression\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,159,229]},{\"operands\":[{\"expression\":{\"op\":\"Sub\",\"children\":{\"left\":{\"op\":\"Add\",\"children\":{\"left\":{\"op\":\"StartInstructionValue\"},\"right\":{\"op\":\"ConstantValue\",\"value\":8}}},\"right\":{\"op\":\"OperandValue\",\"offset\":0,\"child\":{\"op\":\"TokenField\",\"value\":{\"bitend\":11,\"shift\":0,\"signbit\":false,\"bitstart\":0,\"byteend\":1,\"bigendian\":false,\"bytestart\":0}}}}},\"var_id\":\":foo\",\"type\":\"Scalar\",\"mask\":[255,15,0,0]}],\"value\":[0,48,31,229]}],\"mask\":[0,240,255,255]}],\"type\":\"LOOKUP\"},{\"note\":\"AnyBytesNode Start: 8 End: 8 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{8,8}`\",\"min\":8,\"max\":8,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"},{\"type\":\"LABEL\",\"value\":\"foo\"},{\"note\":\"AnyBytesNode Start: 1 End: 1 Interval: 1 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{1,1}`\",\"min\":1,\"max\":1,\"interval\":1,\"type\":\"ANYBYTESEQUENCE\"}";
 
 	private static final String ldrPatternMisallignedLabel =
 			"ldr r3,[`:foo`]\n" +
@@ -141,7 +168,42 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		builder.createLabel("0x1008420", "TEST_LABEL");
 		builder.createLabel("0x1008424", "TEST_LABEL2");
 		builder.createLabel("0x1000424", "TEST_LABEL3");
-		setup(builder);
+		program = builder.getProgram();
+	}
+	
+	@Test
+	public void testBasicCompiling() {
+		String testQueryPatternExpected = "{\"tables\":[" + "" + "],\"steps\":["
+				+ stepsForSimplePattern + "]";
+		generatePatternTestHelper(simplePattern, testQueryPatternExpected + this.getCompileInfo());
+	}
+	
+	@Test
+	public void testBasicOrCompiling() {
+		String testQueryPatternExpected = "{\"tables\":[" + "" + "],\"steps\":["
+				+ stepsForSimpleOrPattern + "]";
+		generatePatternTestHelper(simpleOrPattern, testQueryPatternExpected + this.getCompileInfo());
+	}
+
+	@Test
+	public void testBasicMetadataCompiling() {
+		String testQueryPatternExpected = "{\"tables\":[" + "" + "],\"steps\":["
+				+ stepsForSimpleMetadataPattern + "]";
+		generatePatternTestHelper(simpleMetadataPattern, testQueryPatternExpected + (this.getCompileInfo().replace("\"pattern_metadata\":{}", "\"pattern_metadata\":{\"foo\":\"bar\",\"baz\":\"boop\"}")));
+	}
+	
+	@Test
+	public void testBasicNotCompiling() {
+		String testQueryPatternExpected = "{\"tables\":[" + "" + "],\"steps\":["
+				+ stepsForSimpleNotPattern + "]";
+		generatePatternTestHelper(simpleNotPattern, testQueryPatternExpected + (this.getCompileInfo()));
+	}
+
+	@Test
+	public void testBasicByteStringCompiling() {
+		String testQueryPatternExpected = "{\"tables\":[" + "" + "],\"steps\":["
+				+ stepsForSimpleByteStringPattern + "]";
+		generatePatternTestHelper(simpleByteStringPattern, testQueryPatternExpected + (this.getCompileInfo()));
 	}
 
 	@Test
@@ -154,7 +216,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testRunPatternWithSuboperand() {
 		List<SavedDataAddresses> x = PickledCanary.parseAndRunAll(monitor, this.program,
-				program.getMemory().getMinAddress(), simpleSuboperandInstruction);
+			program.getMemory().getMinAddress(), simpleSuboperandInstruction);
 		List<SavedDataAddresses> expected = new ArrayList<>();
 		SavedData s = new SavedData(dataBase + 8, dataBase + 12);
 		s.addOrFail(new ConcreteOperandField("Q1", "r1"));
@@ -174,7 +236,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testRunPatternWithConstraintEnforcement() {
 		List<SavedDataAddresses> x = PickledCanary.parseAndRunAll(monitor, this.program,
-				program.getMemory().getMinAddress(), enforceConstraintsPattern);
+			program.getMemory().getMinAddress(), enforceConstraintsPattern);
 
 		List<SavedDataAddresses> expected = new ArrayList<>();
 		SavedData s = new SavedData(dataBase + 8, dataBase + 20);
@@ -189,8 +251,6 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		List<String> testQueryPatternExpected = new ArrayList<>();
 		testQueryPatternExpected.add("{\"tables\":[" + tablesForTwoWildcardsInstruction + "],\"steps\":["
 				+ stepsForTwoWildcardsInstruction + "]" + this.getCompileInfo());
-		testQueryPatternExpected.add("{\"tables\":[" + tablesForTwoWildcardsInstruction + "],\"steps\":["
-				+ stepsForTwoWildcardsInstruction_101 + "]" + this.getCompileInfo());
 		generatePatternTestHelper(twoWildcardsInstruction, testQueryPatternExpected);
 	}
 
@@ -206,6 +266,10 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		// For Ghidra versions in the 10.2 ballpark
 		testQueryPatternExpected.add("{\"tables\":[" + tablesForInstructionsWithWildcards + "],\"steps\":["
 				+ stepsForInstructionsWithWildcards_evenNewer + "]" + this.getCompileInfo());
+		
+		// For Ghidra versions in the 11.2 ballpark
+		testQueryPatternExpected.add("{\"tables\":[" + tablesForInstructionsWithWildcards112 + "],\"steps\":["
+				+ stepsForInstructionsWithWildcards112 + "]" + this.getCompileInfo());
 		generatePatternTestHelper(instructionsWithWildcards, testQueryPatternExpected);
 	}
 
@@ -222,8 +286,6 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		testQueryPatternExpected.add("{\"tables\":[" + tablesForLdrInstruction + "],\"steps\":["
 				+ stepsForLdrInstruction + "]" + this.getCompileInfo());
 
-		testQueryPatternExpected.add("{\"tables\":[" + tablesForLdrInstruction + "],\"steps\":["
-				+ stepsForLdrInstruction_pre1014 + "]" + this.getCompileInfo());
 		generatePatternTestHelper(ldrInstruction, testQueryPatternExpected);
 	}
 
@@ -259,7 +321,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testLabelPatternBlExecution() {
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				this.program.getMinAddress(), blPatternLabel);
+			this.program.getMinAddress(), blPatternLabel);
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
@@ -269,7 +331,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testMisalignedLabelPatternBl() {
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				this.program.getMinAddress(), blPatternMisallignedLabel);
+			this.program.getMinAddress(), blPatternMisallignedLabel);
 
 		Assert.assertEquals(0, results.size());
 	}
@@ -277,7 +339,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testLabelPatternLdr() {
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-				this.program.getMinAddress(), ldrPatternLabel);
+			this.program.getMinAddress(), ldrPatternLabel);
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
@@ -288,8 +350,6 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		List<String> testQueryPatternExpected = new ArrayList<>();
 		testQueryPatternExpected.add("{\"tables\":[" + tablesForLdrPatternLabel + "],\"steps\":["
 				+ stepsForLdrPatternLabel + "],\"compile_info\":[],\"pattern_metadata\":{}}");
-		testQueryPatternExpected.add("{\"tables\":[" + tablesForLdrPatternLabel + "],\"steps\":["
-				+ stepsForLdrPatternLabel1003 + "],\"compile_info\":[],\"pattern_metadata\":{}}");
 
 		generatePatternTestHelper(ldrPatternLabel, testQueryPatternExpected, true);
 	}
