@@ -1,10 +1,5 @@
 [workspace]
-members = [
-    "treesearchtool",
-    "treesearchlib",
-    "pclib",
-    "pcviz"
-]
+members = ["treesearchtool", "treesearchlib", "pclib", "pcviz"]
 
 [profile.release]
 lto = true
