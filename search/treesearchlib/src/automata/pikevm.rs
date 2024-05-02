@@ -11,7 +11,6 @@
 
 use core::clone::Clone;
 use core::convert::TryInto;
-use core::usize;
 extern crate test;
 
 use bitvec::prelude::*;

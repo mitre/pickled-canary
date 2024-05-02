@@ -360,7 +360,6 @@ impl<Endian: BitOrder + Clone> Op<Endian> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
 
     use super::*;
     use crate::bitstructs::{
@@ -399,7 +398,7 @@ mod tests {
             .as_bytes(),
         )
         .unwrap();
-        let bin_op: Op<Msb0> = json_op.try_into().unwrap();
+        let bin_op: Op<Msb0> = json_op.into();
 
         let expected = Op::<Msb0>::LookupQuick {
             bytes: vec![0],
@@ -443,7 +442,7 @@ mod tests {
             .as_bytes(),
         )
         .unwrap();
-        let bin_op: Op<Msb0> = json_op.try_into().unwrap();
+        let bin_op: Op<Msb0> = json_op.into();
 
         let expected = Op::<Msb0>::LookupQuick {
             bytes: vec![48],

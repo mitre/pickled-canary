@@ -74,11 +74,11 @@ impl<Endian: BitOrder + Clone> Pattern<Endian> {
             ));
         }
 
-        self.steps = other.steps.clone();
+        self.steps.clone_from(&other.steps);
         self.steps.append(&mut tmp);
 
         let mut tmp_tables = self.tables.clone();
-        self.tables = other.tables.clone();
+        self.tables.clone_from(&other.tables);
         self.tables.append(&mut tmp_tables);
     }
 
