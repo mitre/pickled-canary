@@ -52,7 +52,9 @@ jobs:
         run: cargo build --release --verbose
       - name: Build Windows
         working-directory: search
-        run: cargo build --release --verbose --target x86_64-pc-windows-gnu
+        run: |
+          rustup component list --installed
+          cargo build --release --verbose --target x86_64-pc-windows-gnu
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
