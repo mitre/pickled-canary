@@ -40,6 +40,7 @@ jobs:
           rustup default $RUST_VERSION
           sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
+          rustup component add rust-std-x86_64-pc-windows-gnu
       - name: Format Rust
         working-directory: search
         run: cargo fmt --all -- --color=always --check
