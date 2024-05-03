@@ -114,8 +114,7 @@ public class LookupData extends Data {
 			if (ie.getValue().equals(maskedData)) {
 				List<ConcreteOperand> concreteOperands = new ArrayList<>(ie.getOperands().size());
 				for (OperandMeta o : ie.getOperands()) {
-					if (o instanceof FieldOperandMeta) {
-						FieldOperandMeta oo = (FieldOperandMeta) o;
+					if (o instanceof FieldOperandMeta oo) {
 
 						BitArray operandData = dataBitArray.trimToMask(new BitArray(oo.mask));
 						int tableIdx = oo.getResolvedTableKey();
