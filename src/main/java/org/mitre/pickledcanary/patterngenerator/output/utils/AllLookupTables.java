@@ -3,10 +3,7 @@
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import org.json.JSONArray;
 
@@ -78,11 +75,11 @@ public class AllLookupTables {
 	}
 
 	private void populateStuff() {
-		for (String key : tables.keySet()) {
-			bitMaskToLookupTableHash.put(key, tables.get(key).hashCode());
+		for (Map.Entry<String, LookupTable> stringLookupTableEntry : tables.entrySet()) {
+			bitMaskToLookupTableHash.put(stringLookupTableEntry.getKey(), stringLookupTableEntry.getValue().hashCode());
 		}
 		noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
-		noDupTables.sort((a,b)-> a.compareTo(b));
+		noDupTables.sort(Comparator.naturalOrder());
 		for (int i = 0; i < noDupTables.size(); i++) {
 			lookupTableHashToOutIdx.put(noDupTables.get(i).hashCode(), i);
 		}
