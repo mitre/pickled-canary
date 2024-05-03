@@ -1,11 +1,8 @@
 package org.mitre.pickledcanary.patterngenerator;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -57,9 +54,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	private final WildSleighAssembler assembler;
 	private final TaskMonitor monitor;
 
-	private final SleighLanguage language;
-
-	// operand - binary representation tables
+    // operand - binary representation tables
 	private AllLookupTables tables;
 
 	private final List<OrMultiState> orStates;
@@ -68,7 +63,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	private final List<List<Step>> pushedSteps;
 	private final List<AllLookupTables> pushedTables;
 
-	private final Stack<Integer> byteStack;
+	private final Deque<Integer> byteStack;
 
 	private JSONObject metadata;
 
@@ -84,8 +79,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		this.currentProgram = currentProgram;
 		this.currentAddress = currentAddress;
 		this.monitor = monitor;
-		this.language = (SleighLanguage) currentProgram.getLanguage();
-		WildSleighAssemblerBuilder builder = new WildSleighAssemblerBuilder(this.language);
+        SleighLanguage language = (SleighLanguage) currentProgram.getLanguage();
+		WildSleighAssemblerBuilder builder = new WildSleighAssemblerBuilder(language);
 		this.assembler = builder.getAssembler(new AssemblySelector(), currentProgram);
 
 		this.tables = new AllLookupTables();
@@ -94,7 +89,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		this.orStates = new ArrayList<>();
 		this.steps = new ArrayList<>();
 		this.pushedSteps = new ArrayList<>();
-		this.byteStack = new Stack<>();
+		this.byteStack = new ArrayDeque<>();
 
 		this.metadata = new JSONObject();
 	}
@@ -129,12 +124,12 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	@Override
 	public Void visitByte_string(pc_grammar.Byte_stringContext ctx) {
 
-		var string_data = ctx.getText().strip();
+		var stringData = ctx.getText().strip();
 		// Remove starting and ending '"' and translate escapes
-		string_data = string_data.substring(1, string_data.length() - 1).translateEscapes();
+		stringData = stringData.substring(1, stringData.length() - 1).translateEscapes();
 
 		// Add a "Byte" for each character
-		for (int x : string_data.toCharArray()) {
+		for (int x : stringData.toCharArray()) {
 			this.steps.add(new Byte(x));
 		}
 
@@ -177,8 +172,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		// Check if our existing metadata is equal to an empty JSONObject
 		if (this.metadata.toString().equals(new JSONObject().toString())) {
 			this.metadata = new JSONObject(meta);
-		}else {
-			throw new RuntimeException("Can not have more than one META section!");
+		} else {
+			throw new QueryParseException("Can not have more than one META section!", ctx);
 		}
 		return null;
 	}
@@ -278,15 +273,15 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		// Try to hint that we should clean memory before trying to do the following
 		// memory-heavy stuff
-		System.gc();
+		// System.gc();
 
 		Collection<AssemblyParseResult> parses = assembler.parseLine(ctx.getText())
 				.stream()
 				.filter(p -> !p.isError())
 				.toList();
 
-		if (parses.size() == 0) {
-			raise_invalid_instruction_exception(ctx.getText());
+		if (parses.isEmpty()) {
+			raiseInvalidInstructionException(ctx);
 		}
 
 		LookupStep lookupStep = new LookupStep();
@@ -301,45 +296,19 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 				return null;
 			}
 
-			resultsLoop: for (AssemblyResolution res : results) {
+			for (AssemblyResolution res : results) {
 				if (res instanceof WildAssemblyResolvedPatterns pats) {
 					AssemblyPatternBlock assemblyPatternBlock = pats.getInstruction();
+					Set<WildOperandInfo> operandInfos = pats.getOperandInfo();
+
 					if (DEBUG) {
 						System.err.println(assemblyPatternBlock);
 					}
-					AssemblyPatternBlock noWildcardMask = assemblyPatternBlock.copy();
-
-					// In some cases (e.g. "SHRD EAX,EBX,`Q1[..]`" in x86 32 bit) the instruction
-					// returned by getInstruction is shorter than the location mask of some of that
-					// instruction's operands. This block checks if that's the case and if so,
-					// lengthens the instruction to fit its operands.
-					int maxOperandLocationLength = pats.getOperandInfo()
-							.stream()
-							.map((x) -> x.location().getMaskAll().length)
-							.max(Integer::compare)
-							.orElse(0);
-					
-					if (noWildcardMask.getMaskAll().length < maxOperandLocationLength) {
-						noWildcardMask = assemblyPatternBlock
-								.combine(AssemblyPatternBlock.fromLength(maxOperandLocationLength));
+					AssemblyPatternBlock noWildcardMask = getNoWildcardMask(operandInfos, assemblyPatternBlock);
+					if (DEBUG) {
+						System.err.println(noWildcardMask);
 					}
-
-					HashMap<String, Object> operandChoices = new HashMap<String, Object>();
-					for (WildOperandInfo info : pats.getOperandInfo()) {
-						// remove masks of wildcards from the full instruction
-						noWildcardMask = noWildcardMask.maskOut(info.location());
-
-						// Just skip over instructions which have the same wildcard twice but with
-						// different choices
-						if (operandChoices.containsKey(info.wildcard())) {
-							if (operandChoices.get(info.wildcard()) != info.choice()) {
-								continue resultsLoop;
-							}
-						}
-						else {
-							operandChoices.put(info.wildcard(), info.choice());
-						}
-					}
+					if (noWildcardMask == null) continue;
 
 					List<Integer> noWildcardMaskList = integerList(noWildcardMask.getMaskAll());
 					List<Integer> noWildcardValList = integerList(noWildcardMask.getValsAll());
@@ -357,8 +326,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 							}
 							lookupStep.putData(noWildcardMaskList, lookupData);
 						}
-					}
-					else {
+					} else {
 						// no LookupData or InstructionEncoding -- make both
 						InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
 						LookupData lookupData = new LookupData(noWildcardMaskList);
@@ -368,7 +336,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 					// TODO: Remove wildcardIdx (here and in where it was being passed)
 					var wildcardIdx = 0;
-					for (WildOperandInfo assemblyOperandData : pats.getOperandInfo()) {
+					for (WildOperandInfo assemblyOperandData : operandInfos) {
 						if (assemblyOperandData.wildcard().compareTo(WILDCARD) == 0) {
 // wildcardIdx += 1;
 							continue;
@@ -376,40 +344,17 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 						List<Integer> wildcardMask =
 							integerList(assemblyOperandData.location().getMaskAll());
+
 						while (wildcardMask.size() < assemblyPatternBlock.length()) {
 							wildcardMask.add(0);
 						}
 
 						// get key of table
-						String tableKey = noWildcardMask.toString() + "_" + wildcardIdx;
+						String tableKey = noWildcardMask + "_" + wildcardIdx;
 
 						// It's not a scalar operand
 						if (assemblyOperandData.choice() != null) {
-							// get the current operand
-							String operand = assemblyOperandData.choice().toString();
-
-							var z = assemblyOperandData.location();
-
-							// get binary masks and values of operand above
-							// tableVals[0] is masks, tableVals[1] is values
-							List<List<Integer>> tableVals = new ArrayList<List<Integer>>(2);
-							tableVals.add(integerList(z.trim().getMaskAll()));
-							tableVals.add(
-								integerList(z.getMaskedValue(assemblyPatternBlock.getValsAll())
-										.trim()
-										.getValsAll()));
-
-							/// ----------------------------
-							// put mapping of operand to masks and values in table named tableKey
-							if (DEBUG) {
-								System.out.println(
-									"Inserting mask and value of operand into table:\n\tTable name: " +
-										tableKey + "\n\tOperand name: " + operand +
-										"\n\tOperand mask: " + tableVals.get(0) +
-										"\n\tOperand value: " + tableVals.get(1));
-							}
-							tables.put(tableKey, operand, tableVals.get(0), tableVals.get(1));
-							/// ----------------------------
+							addOperandToTable(assemblyOperandData, assemblyPatternBlock, tableKey);
 						}
 
 						// add operand to json
@@ -417,8 +362,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 						if (assemblyOperandData.choice() == null) {
 							ot = new ScalarOperandMeta(wildcardMask, assemblyOperandData.wildcard(),
 								assemblyOperandData.expression());
-						}
-						else {
+						} else {
 							ot = new FieldOperandMeta(wildcardMask, tableKey,
 								assemblyOperandData.wildcard());
 						}
@@ -437,24 +381,87 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		}
 
 		if (lookupStep.isEmpty()) {
-			raise_invalid_instruction_exception(ctx.getText());
+			raiseInvalidInstructionException(ctx);
 		}
 		this.steps.add(lookupStep);
 
 		return null;
 	}
 
-	void raise_invalid_instruction_exception(String instructionText) {
+	private static AssemblyPatternBlock getNoWildcardMask(Collection<WildOperandInfo> operandInfos, AssemblyPatternBlock assemblyPatternBlock) {
+		AssemblyPatternBlock result = assemblyPatternBlock.copy();
+
+		// In some cases (e.g. "SHRD EAX,EBX,`Q1[..]`" in x86 32 bit) the instruction
+		// returned by getInstruction is shorter than the location mask of some of that
+		// instruction's operands. This block checks if that's the case and if so,
+		// lengthens the instruction to fit its operands.
+		int maxOperandLocationLength = operandInfos
+				.stream()
+				.map(x -> x.location().getMaskAll().length)
+				.max(Integer::compare)
+				.orElse(0);
+
+		if (result.getMaskAll().length < maxOperandLocationLength) {
+			result = assemblyPatternBlock
+					.combine(AssemblyPatternBlock.fromLength(maxOperandLocationLength));
+		}
+
+		HashMap<String, Object> operandChoices = new HashMap<>();
+		for (WildOperandInfo info : operandInfos) {
+			// remove masks of wildcards from the full instruction
+			result = result.maskOut(info.location());
+
+			// Just skip over instructions which have the same wildcard twice but with
+			// different choices
+			if (operandChoices.containsKey(info.wildcard())) {
+				if (operandChoices.get(info.wildcard()) != info.choice()) {
+					return null;
+				}
+			}
+			else {
+				operandChoices.put(info.wildcard(), info.choice());
+			}
+		}
+		return result;
+	}
+
+	private void addOperandToTable(WildOperandInfo assemblyOperandData, AssemblyPatternBlock assemblyPatternBlock, String tableKey) {
+		// get the current operand
+		String operand = assemblyOperandData.choice().toString();
+
+		AssemblyPatternBlock patternBlock = assemblyOperandData.location();
+
+		// get binary masks and values of operand above
+		List<Integer> masks = integerList(patternBlock.trim().getMaskAll());
+		List<Integer> values = integerList(patternBlock.getMaskedValue(assemblyPatternBlock.getValsAll())
+				.trim()
+				.getValsAll());
+
+		/// ----------------------------
+		// put mapping of operand to masks and values in table named tableKey
+		if (DEBUG) {
+			System.out.println(
+				"Inserting mask and value of operand into table:\n\tTable name: " +
+						tableKey + "\n\tOperand name: " + operand +
+					"\n\tOperand mask: " + masks +
+					"\n\tOperand value: " + values);
+		}
+		tables.put(tableKey, operand, masks, values);
+		/// ----------------------------
+	}
+
+	void raiseInvalidInstructionException(ParserRuleContext ctx) {
+		String instructionText = ctx.getText();
+
 		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
-			throw new RuntimeException(
-				"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction. Check this line: '" +
-					instructionText + "'");
+			throw new QueryParseException(
+				"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction", ctx);
 		}
 		else {
-			throw new RuntimeException(
+			throw new QueryParseException(
 				"An assembly instruction in your pattern (" + instructionText +
 					") did not return any output. Make sure your assembly instructions" +
-					" are valid or that you are using a binary with the same architecture.");
+					" are valid or that you are using a binary with the same architecture.", ctx);
 		}
 	}
 
@@ -468,10 +475,10 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	 * @return
 	 */
 	List<Integer> integerList(byte[] input) {
-		List<Integer> out = new ArrayList<Integer>(input.length);
-		for (int i = 0; i < input.length; i++) {
-			out.add(java.lang.Byte.toUnsignedInt(input[i]));
-		}
+		List<Integer> out = new ArrayList<>(input.length);
+        for (byte b : input) {
+            out.add(java.lang.Byte.toUnsignedInt(b));
+        }
 		return out;
 	}
 

@@ -301,7 +301,8 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	@Test
 	public void testUnbalancedCommand() {
 		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction. Check this line: 'MOV `'");
+		exceptionRule.expectMessage("Failed to parse query: This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction\n" +
+				"Check this line: 'MOV `'");
 		final String testQuery = ";something\nMOV `\n;foo";
 		generatePatternTestHelper(testQuery, "");
 	}
