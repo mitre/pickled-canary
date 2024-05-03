@@ -27,6 +27,8 @@ import ghidra.app.plugin.processors.sleigh.symbol.OperandSymbol;
 import ghidra.app.plugin.processors.sleigh.symbol.TripleSymbol;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.mem.MemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 /**
  * Ghidra already has a built-in expression solver (accessed by calling
@@ -70,7 +72,7 @@ public class LookupDataExpressionSolver {
 		} else if (expression instanceof EndInstructionValue) {
 			return computeEndInstructionValueExpression(input, sp, len);
 		} else {
-			throw new UnsupportedExpressionType(expression);
+			throw new UnsupportedExpressionException(expression);
 		}
 	}
 
@@ -166,7 +168,7 @@ public class LookupDataExpressionSolver {
 		try {
 			res = getContextBytes(tf, input, sp);
 		} catch (MemoryAccessException e) {
-			throw new SolverMemoryAccessException(e);
+			throw new ExpressionMemoryAccessException(tf, e);
 		}
 
 		res >>= tf.getShift();
@@ -182,7 +184,7 @@ public class LookupDataExpressionSolver {
 		try {
 			res = getInstructionBytes(tf, input, sp);
 		} catch (MemoryAccessException e) {
-			throw new SolverMemoryAccessException(e);
+			throw new ExpressionMemoryAccessException(tf, e);
 		}
 
 		res >>= tf.getShift();
@@ -221,7 +223,7 @@ public class LookupDataExpressionSolver {
 			return expression.getValue(null);
 		} catch (MemoryAccessException e) {
 			// This should never happen
-			throw new SolverMemoryAccessException(e);
+			throw new ExpressionMemoryAccessException(expression, e);
 		}
 	}
 
@@ -248,7 +250,7 @@ public class LookupDataExpressionSolver {
 		} else if (expression instanceof DivExpression) {
 			return leftval / rightval;
 		} else {
-			throw new UnsupportedExpressionType(expression);
+			throw new UnsupportedExpressionException(expression);
 		}
 	}
 	
@@ -259,31 +261,11 @@ public class LookupDataExpressionSolver {
 		} else if (expression instanceof NotExpression) {
 			return ~unary;
 		} else {
-			throw new UnsupportedExpressionType(expression);
+			throw new UnsupportedExpressionException(expression);
 		}
 	}
 
 	private static long computeEndInstructionValueExpression(MemBuffer input, int sp, int len) {
 		return input.getAddress().add((long) sp + len).getUnsignedOffset();
-	}
-
-	public static class SolverMemoryAccessException extends RuntimeException {
-		public SolverMemoryAccessException(MemoryAccessException exception) {
-			super("Invalid memory access", exception);
-		}
-	}
-
-	public static class UnsupportedExpressionType extends RuntimeException {
-		public UnsupportedExpressionType(PatternExpression expression) {
-			super("Unsupported expression type: " + expression);
-		}
-
-		public UnsupportedExpressionType(UnaryExpression expression) {
-			super("Unsupported unary expression type: " + expression);
-		}
-
-		public UnsupportedExpressionType(BinaryExpression expression) {
-			super("Unsupported binary expression type: " + expression);
-		}
 	}
 }
