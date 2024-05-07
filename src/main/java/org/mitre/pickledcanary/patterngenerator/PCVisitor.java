@@ -334,11 +334,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 						lookupStep.putData(noWildcardMaskList, lookupData);
 					}
 
-					// TODO: Remove wildcardIdx (here and in where it was being passed)
-					var wildcardIdx = 0;
 					for (WildOperandInfo assemblyOperandData : operandInfos) {
 						if (assemblyOperandData.wildcard().compareTo(WILDCARD) == 0) {
-// wildcardIdx += 1;
 							continue;
 						}
 
@@ -350,7 +347,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 						}
 
 						// get key of table
-						String tableKey = noWildcardMask + "_" + wildcardIdx;
+						String tableKey = noWildcardMask + "_0";
 
 						// It's not a scalar operand
 						if (assemblyOperandData.choice() != null) {
@@ -374,7 +371,6 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 								ie.addOperand(ot);
 							}
 						}
-// wildcardIdx += 1;
 					}
 				}
 			}
