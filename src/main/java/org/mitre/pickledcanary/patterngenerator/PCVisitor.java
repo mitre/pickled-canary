@@ -34,7 +34,6 @@ import org.mitre.pickledcanary.patterngenerator.output.steps.ScalarOperandMeta;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Split;
 import org.mitre.pickledcanary.patterngenerator.output.steps.SplitMulti;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Step;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Data.DataType;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Step.StepType;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
@@ -288,7 +287,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		for (AssemblyParseResult p : parses) {
 			if (DEBUG) {
-				System.err.println("parse: " + p);
+				System.err.println("parse = " + p);
 			}
 			AssemblyResolutionResults results = assembler.resolveTree(p, currentAddress);
 
@@ -302,11 +301,11 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 					Set<WildOperandInfo> operandInfos = pats.getOperandInfo();
 
 					if (DEBUG) {
-						System.err.println(assemblyPatternBlock);
+						System.err.println("assemblyPatternBlock = " + assemblyPatternBlock);
 					}
 					AssemblyPatternBlock noWildcardMask = getNoWildcardMask(operandInfos, assemblyPatternBlock);
 					if (DEBUG) {
-						System.err.println(noWildcardMask);
+						System.err.println("noWildcardMask = " + noWildcardMask);
 					}
 					if (noWildcardMask == null) continue;
 
@@ -317,8 +316,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 					// lookup step mask exists
 					if (lookupStep.hasMask(noWildcardMaskList)) {
 						Data data = lookupStep.getData(noWildcardMaskList);
-						if (data.getType().equals(DataType.MaskAndChoose)) {
-							LookupData lookupData = (LookupData) data;
+						if (data instanceof LookupData lookupData) {
 							// if InstructionEncoding does not exist, make one
 							if (!lookupData.hasChoice(noWildcardValList)) {
 								InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
@@ -364,8 +362,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 								assemblyOperandData.wildcard());
 						}
 						Data data = lookupStep.getData(noWildcardMaskList);
-						if (data.getType().equals(DataType.MaskAndChoose)) {
-							LookupData lookupData = (LookupData) data;
+						if (data instanceof LookupData lookupData) {
 							InstructionEncoding ie = lookupData.getChoice(noWildcardValList);
 							if (!ie.matches(ot)) {
 								ie.addOperand(ot);

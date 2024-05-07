@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Data.DataType;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 import org.mitre.pickledcanary.patterngenerator.output.utils.LookupTable;
 import org.mitre.pickledcanary.search.SavedData;
@@ -50,8 +49,8 @@ public class LookupStep extends StepBranchless {
 	 */
 	public void resolveTableIds(AllLookupTables tables) {
 		for (Data d : data.values()) {
-			if (d.getType() == DataType.MaskAndChoose) {
-				((LookupData) d).resolveTableIds(tables);
+			if (d instanceof LookupData lookupData) {
+				lookupData.resolveTableIds(tables);
 			}
 		}
 	}
@@ -93,9 +92,11 @@ public class LookupStep extends StepBranchless {
 		List<LookupAndCheckResult> out = new ArrayList<>(this.data.size());
 
 		for (Data d : this.getAllData()) {
-			LookupAndCheckResult result = d.doLookupAndCheck(input, sp, tables, existing);
-			if (result != null) {
-				out.add(result);
+			if (d instanceof LookupData lookupData) {
+				LookupAndCheckResult result = lookupData.doLookupAndCheck(input, sp, tables, existing);
+				if (result != null) {
+					out.add(result);
+				}
 			}
 		}
 		return out;
@@ -106,6 +107,6 @@ public class LookupStep extends StepBranchless {
 	}
 	
 	public boolean isEmpty() {
-		return this.data.size() == 0;
+		return this.data.isEmpty();
 	}
 }

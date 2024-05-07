@@ -16,13 +16,18 @@ import org.mitre.pickledcanary.search.SavedData;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.mem.MemoryAccessException;
 
-public class LookupData extends Data {
-	// map from value after opcode mask to concrete instruction encodings
-	private final HashMap<List<Integer>, InstructionEncoding> choices;
+/**
+ *
+ * @param choices map from value after opcode mask to concrete instruction encodings
+ * @param mask
+ */
+public record LookupData(
+		List<Integer> mask,
+		HashMap<List<Integer>, InstructionEncoding> choices
+) implements Data {
 
 	public LookupData(List<Integer> mask) {
-		super(DataType.MaskAndChoose, mask);
-		this.choices = new HashMap<>();
+		this(mask, new HashMap<>());
 	}
 
 	public boolean hasChoice(List<Integer> value) {
@@ -48,7 +53,6 @@ public class LookupData extends Data {
 		}
 	}
 
-	@Override
 	public JSONObject getJson() {
 		JSONArray arr = new JSONArray();
 		for (InstructionEncoding ie : choices.values()) {
@@ -56,43 +60,10 @@ public class LookupData extends Data {
 		}
 
 		JSONObject out = new JSONObject();
-		out.put("type", type);
+		out.put("type", "MaskAndChoose");
 		out.put("mask", mask);
 		out.put("choices", arr);
 		return out;
-	}
-
-	private List<Integer> readToList(MemBuffer input, int sp, int len) {
-		List<Integer> out = new ArrayList<>(len);
-		for (int i = 0; i < len; i++) {
-			try {
-				out.add((int) input.getByte(sp + i));
-			} catch (MemoryAccessException e) {
-				return null;
-			}
-		}
-		return out;
-	}
-
-	private BitArray readToBitArray(MemBuffer input, int sp, int len) {
-		byte[] bytes = new byte[len];
-		for (int i = 0; i < len; i++) {
-			try {
-				bytes[i] = input.getByte(sp + i);
-			} catch (MemoryAccessException e) {
-				return null;
-			}
-		}
-		return new BitArray(bytes);
-	}
-
-	private List<Integer> getMasked(List<Integer> base, List<Integer> maskParam) {
-		List<Integer> maskedData = new ArrayList<>();
-		for (int i = 0; i < maskParam.size(); i++) {
-			int rawData = base.get(i);
-			maskedData.add(rawData & maskParam.get(i));
-		}
-		return maskedData;
 	}
 
 	/**
@@ -188,7 +159,36 @@ public class LookupData extends Data {
 		return null;
 	}
 
-	public String toString() {
-		return "LookupData(choices:" + this.choices.toString() + ")";
+	private List<Integer> readToList(MemBuffer input, int sp, int len) {
+		List<Integer> out = new ArrayList<>(len);
+		for (int i = 0; i < len; i++) {
+			try {
+				out.add((int) input.getByte(sp + i));
+			} catch (MemoryAccessException e) {
+				return null;
+			}
+		}
+		return out;
+	}
+
+	private BitArray readToBitArray(MemBuffer input, int sp, int len) {
+		byte[] bytes = new byte[len];
+		for (int i = 0; i < len; i++) {
+			try {
+				bytes[i] = input.getByte(sp + i);
+			} catch (MemoryAccessException e) {
+				return null;
+			}
+		}
+		return new BitArray(bytes);
+	}
+
+	private List<Integer> getMasked(List<Integer> base, List<Integer> maskParam) {
+		List<Integer> maskedData = new ArrayList<>();
+		for (int i = 0; i < maskParam.size(); i++) {
+			int rawData = base.get(i);
+			maskedData.add(rawData & maskParam.get(i));
+		}
+		return maskedData;
 	}
 }
