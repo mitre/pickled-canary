@@ -5,7 +5,10 @@ package org.mitre.pickledcanary.patterngenerator.output.utils;
 
 import java.util.*;
 
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
+import ghidra.asm.wild.WildOperandInfo;
 import org.json.JSONArray;
+import org.mitre.pickledcanary.util.PCBytes;
 
 //@formatter:off
 /**
@@ -121,9 +124,25 @@ public class AllLookupTables {
 	 *
 	 */
 	public List<LookupTable> getPatternTables() {
-		if (bitMaskToLookupTableHash.size() == 0) {
+		if (bitMaskToLookupTableHash.isEmpty()) {
 			this.populateStuff();
 		}
 		return noDupTables;
+	}
+
+	public void addOperand(WildOperandInfo assemblyOperandData, AssemblyPatternBlock assemblyPatternBlock, String tableKey) {
+		// get the current operand
+		String operand = assemblyOperandData.choice().toString();
+
+		AssemblyPatternBlock patternBlock = assemblyOperandData.location();
+
+		// get binary masks and values of operand above
+		List<Integer> masks = PCBytes.integerList(patternBlock.trim().getMaskAll());
+		List<Integer> values = PCBytes.integerList(patternBlock.getMaskedValue(assemblyPatternBlock.getValsAll())
+				.trim()
+				.getValsAll());
+
+		// put mapping of operand to masks and values in table named tableKey
+		this.put(tableKey, operand, masks, values);
 	}
 }

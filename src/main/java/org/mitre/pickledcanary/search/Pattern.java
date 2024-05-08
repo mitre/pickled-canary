@@ -75,14 +75,17 @@ public class Pattern {
 	 * original instruction moved to)
 	 * 
 	 * @param other
+	 * @return this
 	 */
-	public void prepend(Pattern other) {
+	public Pattern prepend(Pattern other) {
 		this.increment(other.steps.size());
 
 		Collections.reverse(other.steps);
 		for (Step s : other.steps) {
 			this.steps.add(0, s);
 		}
+
+		return this;
 	}
 
 	/**
@@ -92,10 +95,24 @@ public class Pattern {
 	 * original instruction moved to)
 	 * 
 	 * @param other
+	 * @return this
 	 */
-	public void append(Pattern other) {
+	public Pattern append(Pattern other) {
 		other.increment(this.steps.size());
 		this.steps.addAll(other.steps);
+		return this;
+	}
+
+	/**
+	 * Adds a .* to the start of the pattern and adds instructions to record
+	 * the start of the match and when the pattern has matched.
+	 * @return this
+	 */
+	public Pattern wrap() {
+		return this.prepend(
+				Pattern.getDotStar()
+						.append(Pattern.getSaveStart())
+		).append(Pattern.getMatch());
 	}
 
 	@Override

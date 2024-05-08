@@ -36,6 +36,8 @@ import ghidra.util.task.TaskMonitor;
  */
 public class PickledCanary {
 
+	public static final boolean DEBUG = true;
+
 	static class MyErrorListener extends BaseErrorListener {
 		@Override
 		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
@@ -92,7 +94,7 @@ public class PickledCanary {
 	 */
 	public static String compile(TaskMonitor monitor, String pattern, Program program,
 			Address address, boolean removeDebugInfo) {
-		return createAndRunVisitor(monitor, pattern, program, address).getJSON(removeDebugInfo);
+		return createAndRunVisitor(monitor, pattern, program, address).getJSONObject(!removeDebugInfo).toString();
 	}
 
 	public static Pattern compile(TaskMonitor monitor, String pattern, Program program,
@@ -127,7 +129,8 @@ public class PickledCanary {
 	 */
 	public static Pattern compileWrapped(TaskMonitor monitor, String pattern, Program program,
 			Address address) {
-		return PickledCanary.createAndRunVisitor(monitor, pattern, program, address).getPatternWrapped();
+		PCVisitor visitor = createAndRunVisitor(monitor, pattern, program, address);
+		return visitor.getPattern().wrap();
 	}
 
 	/**

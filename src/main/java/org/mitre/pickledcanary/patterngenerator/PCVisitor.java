@@ -8,33 +8,25 @@ import org.json.JSONObject;
 
 import ghidra.app.plugin.assembler.AssemblySelector;
 import ghidra.app.plugin.assembler.sleigh.parse.AssemblyParseResult;
-import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
 import ghidra.app.plugin.assembler.sleigh.sem.AssemblyResolution;
 import ghidra.app.plugin.assembler.sleigh.sem.AssemblyResolutionResults;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
-import ghidra.asm.wild.WildOperandInfo;
 import ghidra.asm.wild.WildSleighAssembler;
 import ghidra.asm.wild.WildSleighAssemblerBuilder;
 import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
+import org.mitre.pickledcanary.PickledCanary;
 import org.mitre.pickledcanary.patterngenerator.output.steps.AnyByteSequence;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Byte;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Data;
-import org.mitre.pickledcanary.patterngenerator.output.steps.FieldOperandMeta;
-import org.mitre.pickledcanary.patterngenerator.output.steps.InstructionEncoding;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Jmp;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Label;
-import org.mitre.pickledcanary.patterngenerator.output.steps.LookupData;
 import org.mitre.pickledcanary.patterngenerator.output.steps.LookupStep;
 import org.mitre.pickledcanary.patterngenerator.output.steps.MaskedByte;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Match;
 import org.mitre.pickledcanary.patterngenerator.output.steps.NegativeLookahead;
-import org.mitre.pickledcanary.patterngenerator.output.steps.OperandMeta;
 import org.mitre.pickledcanary.patterngenerator.output.steps.OrMultiState;
-import org.mitre.pickledcanary.patterngenerator.output.steps.ScalarOperandMeta;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Split;
 import org.mitre.pickledcanary.patterngenerator.output.steps.SplitMulti;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Step;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Step.StepType;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammarBaseVisitor;
@@ -42,11 +34,9 @@ import org.mitre.pickledcanary.search.Pattern;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
+import org.mitre.pickledcanary.util.PCAssemblerUtils;
 
 public class PCVisitor extends pc_grammarBaseVisitor<Void> {
-
-	private static final boolean DEBUG = true;
-	private static final String WILDCARD = "*";
 
 	private final Program currentProgram;
 	private final Address currentAddress;
@@ -54,15 +44,14 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	private final TaskMonitor monitor;
 
     // operand - binary representation tables
-	private AllLookupTables tables;
 
 	private final List<OrMultiState> orStates;
-	private List<Step> steps;
-
-	private final List<List<Step>> pushedSteps;
-	private final List<AllLookupTables> pushedTables;
 
 	private final Deque<Integer> byteStack;
+
+	private PatternContext currentContext;
+	private final Deque<PatternContext> contextStack;
+
 
 	private JSONObject metadata;
 
@@ -82,13 +71,11 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		WildSleighAssemblerBuilder builder = new WildSleighAssemblerBuilder(language);
 		this.assembler = builder.getAssembler(new AssemblySelector(), currentProgram);
 
-		this.tables = new AllLookupTables();
-		this.pushedTables = new ArrayList<>();
-
 		this.orStates = new ArrayList<>();
-		this.steps = new ArrayList<>();
-		this.pushedSteps = new ArrayList<>();
 		this.byteStack = new ArrayDeque<>();
+
+		this.currentContext = new PatternContext();
+		this.contextStack = new ArrayDeque<>();
 
 		this.metadata = new JSONObject();
 	}
@@ -108,7 +95,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 			"AnyBytesNode Start: %d End: %d Interval: %d From: Token from line #%d: Token type: PICKLED_CANARY_COMMAND data: `%s`",
 			min, max, step, ctx.start.getLine(), ctx.getText());
 
-		this.steps.add(new AnyByteSequence(min, max, step, note));
+		this.currentContext.steps().add(new AnyByteSequence(min, max, step, note));
 
 		return null;
 	}
@@ -116,7 +103,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	@Override
 	public Void visitByte_match(pc_grammar.Byte_matchContext ctx) {
 		visitChildren(ctx);
-		this.steps.add(new Byte(this.byteStack.pop()));
+		this.currentContext.steps().add(new Byte(this.byteStack.pop()));
 		return null;
 	}
 
@@ -129,7 +116,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		// Add a "Byte" for each character
 		for (int x : stringData.toCharArray()) {
-			this.steps.add(new Byte(x));
+			this.currentContext.steps().add(new Byte(x));
 		}
 
 		return null;
@@ -140,7 +127,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		visitChildren(ctx);
 		var value = this.byteStack.pop();
 		var mask = this.byteStack.pop();
-		this.steps.add(new MaskedByte(mask, value));
+		this.currentContext.steps().add(new MaskedByte(mask, value));
 		return null;
 	}
 
@@ -154,7 +141,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	public Void visitLabel(pc_grammar.LabelContext ctx) {
 		var label = ctx.getText().strip();
 		label = label.substring(0, label.length() - 1);
-		this.steps.add(new Label(label));
+		this.currentContext.steps().add(new Label(label));
 		return null;
 	}
 
@@ -180,25 +167,25 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	@Override
 	public Void visitStart_or(pc_grammar.Start_orContext ctx) {
 		// Add a new "split" step for this OR block.
-		this.steps.add(new SplitMulti(this.steps.size() + 1));
+		this.currentContext.steps().add(new SplitMulti(this.currentContext.steps().size() + 1));
 
 		// Add a new OrState and reference the index of the split node for this Or block
-		this.orStates.add(new OrMultiState(this.steps.size() - 1));
+		this.orStates.add(new OrMultiState(this.currentContext.steps().size() - 1));
 		return null;
 	}
 
 	@Override
 	public Void visitMiddle_or(pc_grammar.Middle_orContext ctx) {
 		// Add a new "jmp" step to (eventually) go to after the second "or" option.
-		this.steps.add(new Jmp(this.steps.size() + 1));
+		this.currentContext.steps().add(new Jmp(this.currentContext.steps().size() + 1));
 
 		OrMultiState currentOrState = this.orStates.get(this.orStates.size() - 1);
-		currentOrState.addMiddleStep(this.steps.size() - 1);
+		currentOrState.addMiddleStep(this.currentContext.steps().size() - 1);
 
 		// Update the split to have its next dest point to here after the jmp ending
 		// the first option
-		SplitMulti s = (SplitMulti) this.steps.get(currentOrState.getStartStep());
-		s.addDest(this.steps.size());
+		SplitMulti s = (SplitMulti) this.currentContext.steps().get(currentOrState.getStartStep());
+		s.addDest(this.currentContext.steps().size());
 		return null;
 	}
 
@@ -211,18 +198,18 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		// "or")
 		List<Integer> middleSteps = currentOrState.getMiddleSteps();
 		for (Integer jmp_idx : middleSteps) {
-			Jmp j = (Jmp) this.steps.get(jmp_idx);
-			j.setDest(this.steps.size());
+			Jmp j = (Jmp) this.currentContext.steps().get(jmp_idx);
+			j.setDest(this.currentContext.steps().size());
 		}
 
 		// If we have exactly two OR options, change from a SplitMulti to a Split
 		if (middleSteps.size() == 1) {
 			List<Integer> origDests =
-				((SplitMulti) this.steps.get(currentOrState.getStartStep())).getDests();
+				((SplitMulti) this.currentContext.steps().get(currentOrState.getStartStep())).getDests();
 
 			Split newSplit = new Split(origDests.get(0));
 			newSplit.setDest2(origDests.get(1));
-			this.steps.set(currentOrState.getStartStep(), newSplit);
+			this.currentContext.steps().set(currentOrState.getStartStep(), newSplit);
 		}
 		return null;
 	}
@@ -237,307 +224,165 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		// pattern (the new ones we're creating here), restore the steps and tables
 		// saved here, and add the "NegativeLookahead" step containing the
 		// just-generated pattern.
-		this.pushedSteps.add(this.steps);
-		this.pushedTables.add(this.tables);
-		this.steps = new ArrayList<>();
-		this.tables = new AllLookupTables();
+		this.contextStack.push(this.currentContext);
+		this.currentContext = new PatternContext();
 		return null;
 	}
 
 	@Override
 	public Void visitEnd_negative_lookahead(pc_grammar.End_negative_lookaheadContext ctx) {
 		// The final step of the not block should be a Match, so add it here.
-		this.steps.add(new Match());
+		this.currentContext.steps.add(new Match());
 
 		// Generate the JSON for the inner-pattern (that will go within the
 		// NegativeLookahead)
-		JSONObject notPattern = this.getOutput();
+		this.currentContext.canonicalize();
+		JSONObject notPattern = this.currentContext.getJson(this.metadata);
 
 		// Restore our "outer"/"main" steps and tables (which were saved at the
 		// NotStartNode)
-		this.steps = this.pushedSteps.remove(this.pushedSteps.size() - 1);
-		this.tables = this.pushedTables.remove(this.pushedTables.size() - 1);
+		this.currentContext = this.contextStack.pop();
 
 		// Add the NegativeLookahead step (including its inner-pattern) to our main set
 		// of steps
-		this.steps.add(new NegativeLookahead(notPattern));
+		this.currentContext.steps().add(new NegativeLookahead(notPattern));
 		return null;
 	}
 
 	@Override
 	public Void visitInstruction(pc_grammar.InstructionContext ctx) {
-		if (DEBUG) {
+		if (PickledCanary.DEBUG) {
 			System.out.println("CURRENTLY PROCESSING: " + ctx.getText());
 		}
 
-		// Try to hint that we should clean memory before trying to do the following
-		// memory-heavy stuff
-		// System.gc();
-
 		Collection<AssemblyParseResult> parses = assembler.parseLine(ctx.getText())
 				.stream()
-				.filter(p -> !p.isError())
+				.filter(p -> {
+					if (PickledCanary.DEBUG && p.isError()) {
+						System.err.println("Error in AssemblyParseResult: " + p);
+					}
+					return !p.isError();
+				})
 				.toList();
-
 		if (parses.isEmpty()) {
 			raiseInvalidInstructionException(ctx);
 		}
 
+		LookupStep lookupStep = this.makeLookupStepFromParseResults(parses);
+		if (lookupStep == null) return null;
+		if (lookupStep.isEmpty()) {
+			raiseInvalidInstructionException(ctx);
+		}
+
+		this.currentContext.steps().add(lookupStep);
+
+		return null;
+	}
+
+	private LookupStep makeLookupStepFromParseResults(Collection<AssemblyParseResult> parses) {
 		LookupStep lookupStep = new LookupStep();
 
 		for (AssemblyParseResult p : parses) {
-			if (DEBUG) {
+			if (PickledCanary.DEBUG) {
 				System.err.println("parse = " + p);
 			}
 			AssemblyResolutionResults results = assembler.resolveTree(p, currentAddress);
 
 			if (monitor.isCancelled()) {
+				// Yield if user wants to cancel operation
 				return null;
 			}
 
 			for (AssemblyResolution res : results) {
 				if (res instanceof WildAssemblyResolvedPatterns pats) {
-					AssemblyPatternBlock assemblyPatternBlock = pats.getInstruction();
-					Set<WildOperandInfo> operandInfos = pats.getOperandInfo();
-
-					if (DEBUG) {
-						System.err.println("assemblyPatternBlock = " + assemblyPatternBlock);
-					}
-					AssemblyPatternBlock noWildcardMask = getNoWildcardMask(operandInfos, assemblyPatternBlock);
-					if (DEBUG) {
-						System.err.println("noWildcardMask = " + noWildcardMask);
-					}
-					if (noWildcardMask == null) continue;
-
-					List<Integer> noWildcardMaskList = integerList(noWildcardMask.getMaskAll());
-					List<Integer> noWildcardValList = integerList(noWildcardMask.getValsAll());
-
-					// build data instruction for json
-					// lookup step mask exists
-					if (lookupStep.hasMask(noWildcardMaskList)) {
-						Data data = lookupStep.getData(noWildcardMaskList);
-						if (data instanceof LookupData lookupData) {
-							// if InstructionEncoding does not exist, make one
-							if (!lookupData.hasChoice(noWildcardValList)) {
-								InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
-								lookupData.putChoice(noWildcardValList, ie);
-							}
-							lookupStep.putData(noWildcardMaskList, lookupData);
-						}
-					} else {
-						// no LookupData or InstructionEncoding -- make both
-						InstructionEncoding ie = new InstructionEncoding(noWildcardValList);
-						LookupData lookupData = new LookupData(noWildcardMaskList);
-						lookupData.putChoice(noWildcardValList, ie);
-						lookupStep.putData(noWildcardMaskList, lookupData);
-					}
-
-					for (WildOperandInfo assemblyOperandData : operandInfos) {
-						if (assemblyOperandData.wildcard().compareTo(WILDCARD) == 0) {
-							continue;
-						}
-
-						List<Integer> wildcardMask =
-							integerList(assemblyOperandData.location().getMaskAll());
-
-						while (wildcardMask.size() < assemblyPatternBlock.length()) {
-							wildcardMask.add(0);
-						}
-
-						// get key of table
-						String tableKey = noWildcardMask + "_0";
-
-						// It's not a scalar operand
-						if (assemblyOperandData.choice() != null) {
-							addOperandToTable(assemblyOperandData, assemblyPatternBlock, tableKey);
-						}
-
-						// add operand to json
-						OperandMeta ot;
-						if (assemblyOperandData.choice() == null) {
-							ot = new ScalarOperandMeta(wildcardMask, assemblyOperandData.wildcard(),
-								assemblyOperandData.expression());
-						} else {
-							ot = new FieldOperandMeta(wildcardMask, tableKey,
-								assemblyOperandData.wildcard());
-						}
-						Data data = lookupStep.getData(noWildcardMaskList);
-						if (data instanceof LookupData lookupData) {
-							InstructionEncoding ie = lookupData.getChoice(noWildcardValList);
-							if (!ie.matches(ot)) {
-								ie.addOperand(ot);
-							}
-						}
-					}
+					PCAssemblerUtils.addAssemblyPatternToStep(pats, currentContext.tables(), lookupStep);
 				}
 			}
 		}
 
-		if (lookupStep.isEmpty()) {
-			raiseInvalidInstructionException(ctx);
-		}
-		this.steps.add(lookupStep);
-
-		return null;
-	}
-
-	private static AssemblyPatternBlock getNoWildcardMask(Collection<WildOperandInfo> operandInfos, AssemblyPatternBlock assemblyPatternBlock) {
-		AssemblyPatternBlock result = assemblyPatternBlock.copy();
-
-		// In some cases (e.g. "SHRD EAX,EBX,`Q1[..]`" in x86 32 bit) the instruction
-		// returned by getInstruction is shorter than the location mask of some of that
-		// instruction's operands. This block checks if that's the case and if so,
-		// lengthens the instruction to fit its operands.
-		int maxOperandLocationLength = operandInfos
-				.stream()
-				.map(x -> x.location().getMaskAll().length)
-				.max(Integer::compare)
-				.orElse(0);
-
-		if (result.getMaskAll().length < maxOperandLocationLength) {
-			result = assemblyPatternBlock
-					.combine(AssemblyPatternBlock.fromLength(maxOperandLocationLength));
-		}
-
-		HashMap<String, Object> operandChoices = new HashMap<>();
-		for (WildOperandInfo info : operandInfos) {
-			// remove masks of wildcards from the full instruction
-			result = result.maskOut(info.location());
-
-			// Just skip over instructions which have the same wildcard twice but with
-			// different choices
-			if (operandChoices.containsKey(info.wildcard())) {
-				if (operandChoices.get(info.wildcard()) != info.choice()) {
-					return null;
-				}
-			}
-			else {
-				operandChoices.put(info.wildcard(), info.choice());
-			}
-		}
-		return result;
-	}
-
-	private void addOperandToTable(WildOperandInfo assemblyOperandData, AssemblyPatternBlock assemblyPatternBlock, String tableKey) {
-		// get the current operand
-		String operand = assemblyOperandData.choice().toString();
-
-		AssemblyPatternBlock patternBlock = assemblyOperandData.location();
-
-		// get binary masks and values of operand above
-		List<Integer> masks = integerList(patternBlock.trim().getMaskAll());
-		List<Integer> values = integerList(patternBlock.getMaskedValue(assemblyPatternBlock.getValsAll())
-				.trim()
-				.getValsAll());
-
-		/// ----------------------------
-		// put mapping of operand to masks and values in table named tableKey
-		if (DEBUG) {
-			System.out.println(
-				"Inserting mask and value of operand into table:\n\tTable name: " +
-						tableKey + "\n\tOperand name: " + operand +
-					"\n\tOperand mask: " + masks +
-					"\n\tOperand value: " + values);
-		}
-		tables.put(tableKey, operand, masks, values);
-		/// ----------------------------
-	}
-
-	void raiseInvalidInstructionException(ParserRuleContext ctx) {
-		String instructionText = ctx.getText();
-
-		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
-			throw new QueryParseException(
-				"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction", ctx);
-		}
-		else {
-			throw new QueryParseException(
-				"An assembly instruction in your pattern (" + instructionText +
-					") did not return any output. Make sure your assembly instructions" +
-					" are valid or that you are using a binary with the same architecture.", ctx);
-		}
-	}
-
-	/**
-	 * Get a list of integers from a byte array.
-	 * 
-	 * <p>
-	 * Bytes are interpreted as UNSIGNED integers.
-	 * 
-	 * @param input
-	 * @return
-	 */
-	List<Integer> integerList(byte[] input) {
-		List<Integer> out = new ArrayList<>(input.length);
-        for (byte b : input) {
-            out.add(java.lang.Byte.toUnsignedInt(b));
-        }
-		return out;
-	}
-
-	/**
-	 * Get raw JSON (without) any debug or compile info
-	 * 
-	 * @return
-	 */
-	public JSONObject getOutput() {
-		JSONObject out = new JSONObject();
-		out.put("tables", tables.getJson());
-
-		JSONArray arr = new JSONArray();
-		for (Step step : steps) {
-			if (step.getStepType() == StepType.LOOKUP) {
-				// replace temp table IDs with the actual table IDs
-				((LookupStep) step).resolveTableIds(tables);
-			}
-			arr.put(step.getJson());
-		}
-		out.put("steps", arr);
-		out.put("pattern_metadata", this.metadata);
-		return out;
-	}
-
-	public String getJSON(boolean removeDebugInfo) {
-		return this.getJSONObject(removeDebugInfo).toString();
+		return lookupStep;
 	}
 	
-	public JSONObject getJSONObject(boolean removeDebugInfo) {
-		var output = this.getOutput();
+	public JSONObject getJSONObject(boolean withDebugInfo) {
+		this.currentContext.canonicalize();
+		JSONObject output = this.currentContext.getJson(this.metadata);
 
-		if (!removeDebugInfo) {
-			JSONObject compileInfo = new JSONObject();
-			JSONObject sourceBinaryInfo = new JSONObject();
-			sourceBinaryInfo.append("path", this.currentProgram.getExecutablePath());
-			sourceBinaryInfo.append("md5", this.currentProgram.getExecutableMD5());
-			sourceBinaryInfo.append("compiled_at_address", this.currentAddress);
-			compileInfo.append("compiled_using_binary", sourceBinaryInfo);
-			compileInfo.append("language_id", this.currentProgram.getLanguageID().getIdAsString());
-			output.append("compile_info", compileInfo);
-		}
-		else {
+		if (withDebugInfo) {
+			output.append("compile_info", this.getDebugJson());
+		} else {
 			ArrayList<String> compileInfo = new ArrayList<>();
-			output.put("compile_info", compileInfo);
+			output.put("compile_info", compileInfo); // TODO <-- should this be a JSON object?
 		}
 
 		return output;
 	}
 
 	public Pattern getPattern() {
-		for (Step step : steps) {
-			if (step.getStepType() == StepType.LOOKUP) {
-				// replace temp table IDs with the actual table IDs
-				((LookupStep) step).resolveTableIds(tables);
+		this.currentContext.canonicalize();
+		return this.currentContext.getPattern();
+	}
+
+	private static void raiseInvalidInstructionException(ParserRuleContext ctx) {
+		String instructionText = ctx.getText();
+
+		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
+			throw new QueryParseException(
+					"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction", ctx);
+		}
+		else {
+			throw new QueryParseException(
+					"An assembly instruction in your pattern (" + instructionText +
+							") did not return any output. Make sure your assembly instructions" +
+							" are valid or that you are using a binary with the same architecture.", ctx);
+		}
+	}
+
+	private JSONObject getDebugJson() {
+		JSONObject compileInfo = new JSONObject();
+		JSONObject sourceBinaryInfo = new JSONObject();
+		sourceBinaryInfo.append("path", this.currentProgram.getExecutablePath());
+		sourceBinaryInfo.append("md5", this.currentProgram.getExecutableMD5());
+		sourceBinaryInfo.append("compiled_at_address", this.currentAddress);
+		compileInfo.append("compiled_using_binary", sourceBinaryInfo);
+		compileInfo.append("language_id", this.currentProgram.getLanguageID().getIdAsString());
+		return compileInfo;
+	}
+
+	private record PatternContext(List<Step> steps, AllLookupTables tables) {
+		PatternContext() {
+			this(new ArrayList<>(), new AllLookupTables());
+		}
+
+		/**
+		 * Replace temporary refs in the data structure with canonical id's.
+		 */
+		void canonicalize() {
+			for (Step step : this.steps) {
+				if (step instanceof LookupStep lookupStep) {
+					lookupStep.resolveTableIds(this.tables);
+				}
 			}
 		}
-		return new Pattern(this.steps, tables.getPatternTables());
-	}
-	
-	public Pattern getPatternWrapped() {
-		Pattern patternCompiled = this.getPattern();
-		Pattern start = Pattern.getDotStar();
-		start.append(Pattern.getSaveStart());
-		patternCompiled.prepend(start);
-		patternCompiled.append(Pattern.getMatch());
-		return patternCompiled;
+
+		Pattern getPattern() {
+			return new Pattern(this.steps, this.tables.getPatternTables());
+		}
+
+		/**
+		 * Get raw JSON (without) any debug or compile info
+		 * @return the JSON for this context
+		 */
+		JSONObject getJson(JSONObject metadata) {
+			JSONObject out = new JSONObject();
+
+			JSONArray arr = new JSONArray();
+			for (Step step : steps) {
+				arr.put(step.getJson());
+			}
+			out.put("steps", arr);
+			out.put("tables", tables.getJson());
+			out.put("pattern_metadata", metadata);
+			return out;
+		}
 	}
 }

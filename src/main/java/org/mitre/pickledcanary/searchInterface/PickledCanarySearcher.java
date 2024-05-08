@@ -74,13 +74,13 @@ public class PickledCanarySearcher {
 		// Parse and compile our pattern to json (and tell everyone who cares)
 		this.visitor = PickledCanary.createAndRunVisitor(monitor, query, program, currentAddress);
 
-		JSONObject o = this.visitor.getJSONObject(removeDebugFlag);
+		JSONObject o = this.visitor.getJSONObject(!removeDebugFlag);
 
 		this.compiledPattern = o.toString(4);
 		this.notifyListeners();
 
 		// Now assemble our pattern into a Java-runnable pattern
-		Pattern patternCompiled = this.visitor.getPatternWrapped();
+		Pattern patternCompiled = this.visitor.getPattern().wrap();
 
 		// Run the pattern
 		PickledCanary.runAll(monitor, program, patternCompiled, accumulator);
