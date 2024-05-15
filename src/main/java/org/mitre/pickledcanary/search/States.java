@@ -3,7 +3,7 @@
 
 package org.mitre.pickledcanary.search;
 
-import java.util.LinkedList;
+import java.util.*;
 
 /**
  * A first-in-first-out queue of states to be processed for each step of the
@@ -12,39 +12,40 @@ import java.util.LinkedList;
  */
 public class States {
 
-	protected final LinkedList<LinkedList<Thread>> inner;
-	protected final int startIdx;
+	private final List<Deque<Thread>> inner;
+	private final int startIdx;
 
 	public States() {
-		this.inner = new LinkedList<>();
+		this.inner = new ArrayList<>();
 		this.startIdx = 0;
 	}
 
+	/**
+	 * Add a thread to a given stack level. If the stack level does not exist it will be created.
+	 * @param sp the stack level
+	 * @param t the thread to add
+	 */
 	public void add(int sp, Thread t) {
 		int spIndex = sp - this.startIdx;
-		LinkedList<Thread> v;
-		try {
-			v = this.inner.get(spIndex);
-		} catch (IndexOutOfBoundsException e) {
-			while (this.inner.size() <= spIndex) {
-				this.inner.add(new LinkedList<>());
-			}
-			v = this.inner.get(spIndex);
+		while (spIndex >= this.inner.size()) {
+			this.inner.add(new ArrayDeque<>());
 		}
-		v.push(t);
+		this.inner.get(spIndex).push(t);
 	}
 
+	/**
+	 * Get the next thread from a given stack level, if it exists.
+	 * @param sp the stack level
+	 * @return the next thread in the queue for that stack level, if it exists.
+	 */
 	public Thread getNextThread(int sp) {
-		try {
-			LinkedList<Thread> l = this.inner.get(sp - this.startIdx);
-			if (!l.isEmpty()) {
-				return l.remove(0);
-			}
-		} catch (IndexOutOfBoundsException e) {
+		int spIndex = sp - this.startIdx;
+		if (spIndex >= this.inner.size()) {
 			return null;
 		}
-		return null;
+		return this.inner.get(spIndex).pollLast();
 	}
+
 	// TODO: implement cleanup of old lists (e.g. remove them and increment
 	// start_idx)
 }

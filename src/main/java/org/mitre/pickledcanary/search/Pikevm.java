@@ -44,6 +44,54 @@ public class Pikevm {
 	}
 
 	/**
+	 * Execute this pikevm with the parameters supplied on creation.
+	 *
+	 * @return
+	 * @throws MemoryAccessException
+	 */
+	public SavedData run() {
+		int sp = 0;
+		this.addThread(sp, 0, new SavedData());
+
+		// This will throw an exception when it reaches the end
+		while (true) {
+
+			if (sp % 256 == 0 && this.monitor.isCancelled()) {
+				return null;
+			}
+
+			// bail when we've reached one past the end of our readable bytes.
+			// We process one past the end here to allow hitting a match on the last byte.
+			// Another possible option is to move Match to addThread and handle returning
+			// from there upon match
+			try {
+				this.input.getByte(Math.max(0, sp - 1));
+			} catch (MemoryAccessException e) {
+				break;
+			}
+
+			while (true) {
+				Thread curThread = this.states.getNextThread(sp);
+				if (curThread == null) {
+					break;
+				}
+
+				SavedData result;
+				try {
+					result = this.processThread(sp, curThread.pc, curThread.saved);
+				} catch (MemoryAccessException e) {
+					continue;
+				}
+				if (result != null) {
+					return result;
+				}
+			}
+			sp += 1;
+		}
+		return null;
+	}
+
+	/**
 	 * Add a thread of execution to be worked on later.
 	 * <p>
 	 * This pre-processes non-blocking steps to preserve match priority (e.g. this
@@ -119,54 +167,6 @@ public class Pikevm {
 				return saved;
 			}
 			throw new RuntimeException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
-		}
-		return null;
-	}
-
-	/**
-	 * Execute this pikevm with the parameters supplied on creation.
-	 * 
-	 * @return
-	 * @throws MemoryAccessException
-	 */
-	public SavedData run() {
-		int sp = 0;
-		this.addThread(sp, 0, new SavedData());
-
-		// This will throw an exception when it reaches the end
-		while (true) {
-
-			if (sp % 256 == 0 && this.monitor.isCancelled()) {
-				return null;
-			}
-
-			// bail when we've reached one past the end of our readable bytes.
-			// We process one past the end here to allow hitting a match on the last byte.
-			// Another possible option is to move Match to addThread and handle returning
-			// from there upon match
-			try {
-				this.input.getByte(Math.max(0, sp - 1));
-			} catch (MemoryAccessException e) {
-				break;
-			}
-
-			while (true) {
-				Thread curThread = this.states.getNextThread(sp);
-				if (curThread == null) {
-					break;
-				}
-
-				SavedData result;
-				try {
-					result = this.processThread(sp, curThread.pc, curThread.saved);
-				} catch (MemoryAccessException e) {
-					continue;
-				}
-				if (result != null) {
-					return result;
-				}
-			}
-			sp += 1;
 		}
 		return null;
 	}
