@@ -56,7 +56,9 @@ public class Pattern {
 	 * @param threshold
 	 */
 	public void increment(int amount, int threshold) {
-		this.steps.forEach((x) -> x.increment(amount, threshold));
+		for (Step step : this.steps) {
+			step.increment(amount, threshold);
+		}
 	}
 
 	/**

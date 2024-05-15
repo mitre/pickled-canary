@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 import org.mitre.pickledcanary.patterngenerator.output.utils.BitArray;
 import org.mitre.pickledcanary.patterngenerator.output.utils.LookupTable;
@@ -81,7 +82,7 @@ public record LookupData(
 
 		BitArray dataBitArray = this.readToBitArray(input, sp, this.mask.size());
 
-		choices: for (InstructionEncoding ie : choices.values()) {
+		choices: for (InstructionEncoding ie : choices.values()) { // TODO: refactor this
 			if (ie.getValue().equals(maskedData)) {
 				List<ConcreteOperand> concreteOperands = new ArrayList<>(ie.getOperands().size());
 				for (OperandMeta o : ie.getOperands()) {
@@ -113,7 +114,7 @@ public record LookupData(
 						}
 						concreteOperands.add(out);
 					} else {
-						throw new RuntimeException("Unknown operand type!");
+						throw new UnsupportedOperationException("Unknown operand type: " + o);
 					}
 				}
 				return new LookupResults(maskedData.size(), concreteOperands);

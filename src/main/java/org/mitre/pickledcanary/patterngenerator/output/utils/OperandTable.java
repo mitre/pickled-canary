@@ -105,7 +105,7 @@ public class OperandTable implements Comparable<OperandTable> {
 	}
 
 	public int compareTo(OperandTable other) {
-		var out = Integer.valueOf(reps.size()).compareTo(other.reps.size());
+		var out = Integer.compare(reps.size(), other.reps.size());
 		if (out != 0) {
 			return out;
 		}

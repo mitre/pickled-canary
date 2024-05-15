@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
 import org.mitre.pickledcanary.patterngenerator.PCVisitor;
+import org.mitre.pickledcanary.patterngenerator.QueryParseException;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_lexer;
 import org.mitre.pickledcanary.search.Pattern;
@@ -43,7 +44,7 @@ public class PickledCanary {
 		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
 				int charPositionInLine,
 				String msg, RecognitionException e) {
-			throw new RuntimeException("Pattern lexer encountered error when processing line " + line + ":" + charPositionInLine + " " + msg);
+			throw new QueryParseException(msg, line, charPositionInLine);
 		}
 	}
 	

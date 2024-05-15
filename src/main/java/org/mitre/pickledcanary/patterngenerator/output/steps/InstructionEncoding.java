@@ -60,7 +60,7 @@ public class InstructionEncoding {
 	public JSONObject getJson() {
 		JSONArray operandArr = new JSONArray();
 
-		operands.sort((a,b) -> a.compareTo(b));
+		operands.sort(OperandMeta::compareTo);
 		for (OperandMeta ot : operands) {
 			operandArr.put(ot.getJson());
 		}

@@ -4,6 +4,7 @@
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.json.JSONObject;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
@@ -43,7 +44,7 @@ public class FieldOperandMeta extends OperandMeta {
 
 	public int getResolvedTableKey() {
 		if (resolvedTableKey == -1) {
-			throw new RuntimeException("Table Key not yet resolved!");
+			throw new NoSuchElementException("Table Key not yet resolved!");
 		}
 		return this.resolvedTableKey;
 	}

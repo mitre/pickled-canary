@@ -27,7 +27,6 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.TextEvent;
@@ -38,8 +37,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 
 import org.mitre.pickledcanary.PickledCanary;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
@@ -72,12 +69,9 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 	private GhidraThreadedTablePanel<SavedDataAddresses> filterTable;
 	private PickledCanarySearchTableModel model;
 
-	private DockingAction openAction;
-	private DockingAction saveAsAction;
 	private DockingAction saveAction;
 	private DockingAction saveCompiledAsAction;
 	private DockingAction saveCompiledAction;
-	private DockingAction action;
 
 	private File selectedFile;
 	private File selectedCompiledFile;
@@ -88,9 +82,6 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 	protected JCheckBox removeDebugCheckbox;
 
 	private PickledCanarySearcher searcher;
-
-	private JPanel container;
-	private JTabbedPane tabbedPanel;
 
 	private static final String COMMIT_ACTION = "commit";
 
@@ -117,7 +108,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 	}
 
 	private JComponent build(String initialValue) {
-		container = new JPanel(new BorderLayout());
+		JPanel container = new JPanel(new BorderLayout());
 
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JPanel compiledTab = new JPanel(new BorderLayout());
@@ -140,10 +131,12 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 
 			@Override
 			public void keyTyped(KeyEvent e) {
+				// Not handled
 			}
 
 			@Override
 			public void keyPressed(KeyEvent e) {
+				// Not handled
 			}
 
 			@Override
@@ -155,7 +148,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 
 		patternPanel.add(new JScrollPane(textArea));
 
-		tabbedPanel = new JTabbedPane();
+		JTabbedPane tabbedPanel = new JTabbedPane();
 
 		JPanel resultsPanel = new JPanel(new BorderLayout());
 
@@ -174,28 +167,25 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 
 		// Watch for changes in the table and pull/re-pull the compiled pattern into the
 		// results text box when we have results.
-		model.addTableModelListener(new TableModelListener() {
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				String s = searcher.getCompiledPattern();
-				if (s.compareTo(PickledCanarySearchTableProvider.this.textAreaCompiled.getText()) != 0) {
-					PickledCanarySearchTableProvider.this.textAreaCompiled.setText(s);
-					if (!s.equals(PickledCanarySearcher.CompilingString)
-							&& !s.equals(PickledCanarySearcher.NotCompiledString)) {
-						saveCompiledAction
-								.setEnabled(PickledCanarySearchTableProvider.this.selectedCompiledFile != null);
-						saveCompiledAsAction.setEnabled(true);
-					}
+		model.addTableModelListener(e -> {
+			String s = searcher.getCompiledPattern();
+			if (s.compareTo(PickledCanarySearchTableProvider.this.textAreaCompiled.getText()) != 0) {
+				PickledCanarySearchTableProvider.this.textAreaCompiled.setText(s);
+				if (!s.equals(PickledCanarySearcher.COMPILING_PATTERN)
+						&& !s.equals(PickledCanarySearcher.NOT_COMPILED_STRING)) {
+					saveCompiledAction
+							.setEnabled(PickledCanarySearchTableProvider.this.selectedCompiledFile != null);
+					saveCompiledAsAction.setEnabled(true);
 				}
-				int unfiltered_count = model.getUnfilteredRowCount();
-				int filtered_count = model.getRowCount();
-
-				String title_count = filtered_count + " items";
-				if (unfiltered_count != filtered_count) {
-					title_count += " (of " + unfiltered_count + ")";
-				}
-				PickledCanarySearchTableProvider.this.setTitle("Pickled Canary Search Results - " + title_count);
 			}
+			int unfiltered_count = model.getUnfilteredRowCount();
+			int filtered_count = model.getRowCount();
+
+			String title_count = filtered_count + " items";
+			if (unfiltered_count != filtered_count) {
+				title_count += " (of " + unfiltered_count + ")";
+			}
+			PickledCanarySearchTableProvider.this.setTitle("Pickled Canary Search Results - " + title_count);
 		});
 
 		searcher.addListener(new TextListener() {
@@ -209,16 +199,13 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 		});
 
 		// listener for Remove Debug Info Checkbox
-		removeDebugCheckbox.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				if (e.getStateChange() == ItemEvent.SELECTED) {
-					// refreshing and recompiling the pattern WITHOUT the debug information
-					doSearch(true);
-				} else {
-					// refreshing and recompiling the pattern WITH the debug information
-					doSearch(false);
-				}
+		removeDebugCheckbox.addItemListener(e -> {
+			if (e.getStateChange() == ItemEvent.SELECTED) {
+				// refreshing and recompiling the pattern WITHOUT the debug information
+				doSearch(true);
+			} else {
+				// refreshing and recompiling the pattern WITH the debug information
+				doSearch(false);
 			}
 		});
 
@@ -254,6 +241,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 	}
 
 	private void createActions() {
+  DockingAction openAction;
 
 		// ## Open pattern
 		openAction = new DockingAction("Load pattern", getName()) {
@@ -286,21 +274,25 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 		dockingTool.addLocalAction(this, openAction);
 
 		// ## Save pattern as
-		saveAsAction = new DockingAction("Save pattern as", getName()) {
+		DockingAction saveAsAction = new DockingAction("Save pattern as", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
 
 				try {
-					PickledCanarySearchTableProvider.this.selectedFile = PickledCanary.pcAskFile(true,
-							PickledCanary.AskFileType.Pattern, PickledCanarySearchTableProvider.this.selectedFile);
-				} catch (CancelledException e) {
+					PickledCanarySearchTableProvider.this.selectedFile =
+							PickledCanary.pcAskFile(true,
+									PickledCanary.AskFileType.Pattern,
+									PickledCanarySearchTableProvider.this.selectedFile);
+				}
+				catch (CancelledException e) {
 					return;
 				}
 
 				if (selectedFile.exists()) {
 					final boolean overwrite = OptionDialog.showYesNoDialog(null, "Confirm Save As",
 							selectedFile.getName()
-									+ " already exists.\nDo you want to replace it?") == OptionDialog.OPTION_ONE;
+									+ " already exists.\nDo you want to replace it?") ==
+							OptionDialog.OPTION_ONE;
 					if (!overwrite) {
 						return;
 					}
@@ -308,14 +300,13 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 
 				PickledCanarySearchTableProvider.this.saveAction.setEnabled(false);
 
-				try {
-					FileWriter fileWriter = new FileWriter(selectedFile);
-
+				try (FileWriter fileWriter = new FileWriter(selectedFile)) {
 					fileWriter.write(textArea.getText());
-					fileWriter.close();
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
-							"Got an error writing the specified file. See details for more information", e);
+							"Got an error writing the specified file. See details for more information",
+							e);
 				}
 
 			}
@@ -329,11 +320,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 		saveAction = new DockingAction("Save pattern", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				try {
-					FileWriter fileWriter = new FileWriter(selectedFile);
-
+				try (FileWriter fileWriter = new FileWriter(selectedFile);) {
 					fileWriter.write(textArea.getText());
-					fileWriter.close();
 				} catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
 							"Got an error writing the specified file. See details for more information", e);
@@ -347,7 +335,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 		saveAction.markHelpUnnecessary();
 		dockingTool.addLocalAction(this, saveAction);
 
-		final ImageIcon CompiledPatternIcon = ResourceManager.getImageIcon(new MultiIcon(Icons.get("images/Disk.png"),
+		final ImageIcon compiledPatternIcon = ResourceManager.getImageIcon(new MultiIcon(Icons.get("images/Disk.png"),
 				new TranslateIcon(ResourceManager.loadImage("images/cache.png", 10, 10), 6, 6)));
 
 		// ## Save compiled pattern as
@@ -378,11 +366,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 				PickledCanarySearchTableProvider.this.saveCompiledAsAction.setEnabled(false);
 				PickledCanarySearchTableProvider.this.saveCompiledAction.setEnabled(false);
 
-				try {
-					FileWriter fileWriter = new FileWriter(selectedCompiledFile);
-
+				try (FileWriter fileWriter = new FileWriter(selectedCompiledFile);) {
 					fileWriter.write(textAreaCompiled.getText());
-					fileWriter.close();
 				} catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
 							"Got an error writing the specified file. See details for more information", e);
@@ -391,7 +376,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 			}
 		};
 
-		saveCompiledAsAction.setToolBarData(new ToolBarData(new DotDotDotIcon(CompiledPatternIcon), null));
+		saveCompiledAsAction.setToolBarData(new ToolBarData(new DotDotDotIcon(compiledPatternIcon), null));
 		saveCompiledAsAction.setEnabled(false);
 		saveCompiledAsAction.markHelpUnnecessary();
 		dockingTool.addLocalAction(this, saveCompiledAsAction);
@@ -400,11 +385,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 		saveCompiledAction = new DockingAction("Save compiled pattern", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
-				try {
-					FileWriter fileWriter = new FileWriter(selectedCompiledFile);
-
+				try(FileWriter fileWriter = new FileWriter(selectedCompiledFile)) {
 					fileWriter.write(textAreaCompiled.getText());
-					fileWriter.close();
 				} catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
 							"Got an error writing the specified file. See details for more information", e);
@@ -413,13 +395,13 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter i
 
 			}
 		};
-		saveCompiledAction.setToolBarData(new ToolBarData(CompiledPatternIcon, null));
+		saveCompiledAction.setToolBarData(new ToolBarData(compiledPatternIcon, null));
 		saveCompiledAction.setEnabled(this.selectedCompiledFile != null);
 		saveCompiledAction.markHelpUnnecessary();
 		dockingTool.addLocalAction(this, saveCompiledAction);
 
 		// ## Refresh / Run pattern
-		action = new DockingAction("Run pattern and reload results", getName()) {
+		DockingAction action = new DockingAction("Run pattern and reload results", getName()) {
 			@Override
 			public void actionPerformed(ActionContext context) {
 				doSearch(removeDebugCheckbox.isSelected());

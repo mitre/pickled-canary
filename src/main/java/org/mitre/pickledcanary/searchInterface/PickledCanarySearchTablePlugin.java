@@ -53,7 +53,7 @@ public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 
 	private PickledCanarySearchTableProvider provider;
 
-	private static enum LastActionType {
+	private enum LastActionType {
 		ADDRESS, SELECTION
 	}
 

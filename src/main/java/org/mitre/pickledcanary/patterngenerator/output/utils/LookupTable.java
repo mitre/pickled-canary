@@ -58,8 +58,8 @@ public class LookupTable implements Comparable<LookupTable>{
 	 */
 	public JSONObject getJson() {
 		JSONObject out = new JSONObject();
-		for (String operand : operandTables.keySet()) {
-			out.put(operand, operandTables.get(operand).getJson());
+		for (Map.Entry<String, OperandTable> stringOperandTableEntry : operandTables.entrySet()) {
+			out.put(stringOperandTableEntry.getKey(), stringOperandTableEntry.getValue().getJson());
 		}
 		return out;
 	}
@@ -109,7 +109,7 @@ public class LookupTable implements Comparable<LookupTable>{
 
 	@Override
 	public int compareTo(LookupTable o) {
-		var out = Integer.valueOf(operandTables.size()).compareTo(o.operandTables.size());
+		var out = Integer.compare(operandTables.size(), o.operandTables.size());
 		if (out != 0) {
 			return out;
 		}

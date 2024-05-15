@@ -7,13 +7,14 @@ import org.mitre.pickledcanary.patterngenerator.output.steps.ConcreteOperand;
 import org.mitre.pickledcanary.patterngenerator.output.steps.ConcreteOperandAddress;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class SavedData {
 
 	public int start = -1;
 	public int end = -1;
-	public final HashMap<String, ConcreteOperand> variables = new HashMap<>();
-	public final HashMap<String, Long> labels = new HashMap<>();
+	public final Map<String, ConcreteOperand> variables = new HashMap<>();
+	public final Map<String, Long> labels = new HashMap<>();
 
 	public SavedData() {
 
@@ -37,17 +38,15 @@ public class SavedData {
 	}
 
 	public boolean addOrFail(ConcreteOperand input) {
-		if (input instanceof ConcreteOperandAddress) {
-			Long v = ((ConcreteOperandAddress) input).getValueLong();
-
+		if (input instanceof ConcreteOperandAddress concreteOperandAddress) {
 			Long value = this.labels.get(input.getVarId());
 			if (value == null) {
 				// This cast is safe b/c of the check previous
-				this.labels.put(input.getVarId(), v);
+				this.labels.put(input.getVarId(), concreteOperandAddress.getValueLong());
 				return true;
 
 			}
-			return value == (long) v;
+			return value == (long) concreteOperandAddress.getValueLong();
 		}
 		ConcreteOperand value = this.variables.get(input.getVarId());
 		if (value == null) {
@@ -58,11 +57,10 @@ public class SavedData {
 	}
 
 	public boolean addOrFail(String label, long input) {
-		Long value = this.labels.get(label);
+		Long value = this.labels.putIfAbsent(label, input);
 		if (value == null) {
-			this.labels.put(label, input);
 			return true;
 		}
-		return (value.equals(input));
+		return value.equals(input);
 	}
 }

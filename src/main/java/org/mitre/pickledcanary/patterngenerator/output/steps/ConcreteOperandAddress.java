@@ -14,18 +14,18 @@ import java.util.Objects;
  */
 public class ConcreteOperandAddress extends ConcreteOperand {
 
-	final private String var_id;
-	final private Long value;
+	private final String varId;
+	private final Long value;
 
-	public ConcreteOperandAddress(String var_id, Long x) {
+	public ConcreteOperandAddress(String varId, Long x) {
 		super(ConcreteOperand.TypeOfOperand.Scalar);
-		this.var_id = var_id;
+		this.varId = varId;
 		this.value = x;
 	}
 
 	@Override
 	public String getVarId() {
-		return this.var_id;
+		return this.varId;
 	}
 
 	@Override
@@ -39,7 +39,7 @@ public class ConcreteOperandAddress extends ConcreteOperand {
 
 	@Override
 	public String toString() {
-		return "{" + this.var_id + "=" + this.value + "}";
+		return "{" + this.varId + "=" + this.value + "}";
 	}
 
 	@Override
@@ -51,6 +51,6 @@ public class ConcreteOperandAddress extends ConcreteOperand {
 		if (Objects.equals(this.value, that.getValueLong())) {
 			return false;
 		}
-		return this.var_id.equals(that.getVarId());
+		return this.varId.equals(that.getVarId());
 	}
 }

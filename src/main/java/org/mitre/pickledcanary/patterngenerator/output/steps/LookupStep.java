@@ -68,11 +68,7 @@ public class LookupStep extends StepBranchless {
 	}
 
 	public List<Data> getAllData() {
-		List<Data> out = new LinkedList<Data>();
-		for (Data d : this.data.values()) {
-			out.add(d);
-		}
-		return out;
+		return new LinkedList<>(this.data.values());
 	}
 
 	/**
