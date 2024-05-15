@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PCBytes {
+    private PCBytes() {
+        // Utility class, do nothing
+    }
+
     /**
      * Get a list of integers from a byte array.
      *

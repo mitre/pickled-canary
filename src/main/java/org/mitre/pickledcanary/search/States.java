@@ -13,31 +13,31 @@ import java.util.LinkedList;
 public class States {
 
 	protected final LinkedList<LinkedList<Thread>> inner;
-	protected final int start_idx;
+	protected final int startIdx;
 
 	public States() {
 		this.inner = new LinkedList<>();
-		this.start_idx = 0;
+		this.startIdx = 0;
 	}
 
 	public void add(int sp, Thread t) {
-		int sp_index = sp - this.start_idx;
+		int spIndex = sp - this.startIdx;
 		LinkedList<Thread> v;
 		try {
-			v = this.inner.get(sp_index);
+			v = this.inner.get(spIndex);
 		} catch (IndexOutOfBoundsException e) {
-			while (this.inner.size() <= sp_index) {
+			while (this.inner.size() <= spIndex) {
 				this.inner.add(new LinkedList<>());
 			}
-			v = this.inner.get(sp_index);
+			v = this.inner.get(spIndex);
 		}
 		v.push(t);
 	}
 
-	public Thread get_next_thread(int sp) {
+	public Thread getNextThread(int sp) {
 		try {
-			LinkedList<Thread> l = this.inner.get(sp - this.start_idx);
-			if (l.size() > 0) {
+			LinkedList<Thread> l = this.inner.get(sp - this.startIdx);
+			if (!l.isEmpty()) {
 				return l.remove(0);
 			}
 		} catch (IndexOutOfBoundsException e) {
