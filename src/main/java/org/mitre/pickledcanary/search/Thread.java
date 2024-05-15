@@ -11,18 +11,4 @@ package org.mitre.pickledcanary.search;
  * and/or variable values [e.g. Q1=r0]).
  *
  */
-public class Thread {
-
-	public final int pc;
-	public final SavedData saved;
-
-	public Thread(int pc, SavedData saved) {
-		this.pc = pc;
-		this.saved = saved;
-	}
-
-	public String toString() {
-		return "Thread(pc:" + this.pc + ", " + this.saved.toString() + ")";
-	}
-
-}
+public record Thread(int pc, SavedData saved) {}

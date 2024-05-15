@@ -17,12 +17,7 @@ import ghidra.program.model.address.AddressOutOfBoundsException;
  * This is very similar to SavedData, but the values in this class have been
  * converted to addresses.
  */
-public class SavedDataAddresses {
-
-	private final Address start;
-	private final Address end;
-	public final HashMap<String, ConcreteOperand> variables;
-	public final HashMap<String, Address> labels;
+public record SavedDataAddresses(Address start, Address end, Map<String, ConcreteOperand> variables, Map<String, Address> labels) {
 
 	/**
 	 * Converts the given saved by adding base to the start and end values.
@@ -35,12 +30,9 @@ public class SavedDataAddresses {
 	 * @param baseIn
 	 */
 	public SavedDataAddresses(SavedData saved, Address baseIn) {
-		this.start = baseIn.add(saved.start);
-		this.end = baseIn.add(saved.end);
-		this.variables = saved.variables;
+		this(baseIn.add(saved.start), baseIn.add(saved.end), saved.variables, new HashMap<>());
 
 		// Convert labels to Addresses
-		this.labels = new HashMap<>();
 		Address base = baseIn.getNewAddress(0);
 		for (Map.Entry<String, Long> x : saved.labels.entrySet()) {
 			Address out;
@@ -52,21 +44,6 @@ public class SavedDataAddresses {
 			}
 			this.labels.put(x.getKey(), out);
 		}
-	}
-
-	public String toString() {
-		String out = "SavedDataAddresses(start: " + this.start.toString() + ", end: " + this.end.toString();
-
-		if (this.variables.size() > 0) {
-			out += ", variables: " + this.variables.toString();
-		}
-		if (this.labels.size() > 0) {
-			out += ", labels: "
-
-					+ this.labels.toString();
-		}
-		out += ")";
-		return out;
 	}
 
 	public Address getStart() {
@@ -85,20 +62,5 @@ public class SavedDataAddresses {
 	public String getLabelsString() {
 		return this.labels.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue().toString())
 				.collect(joining(", "));
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null) {
-			return false;
-		}
-		if (this.getClass() != o.getClass()) {
-			return false;
-		}
-		SavedDataAddresses other = (SavedDataAddresses) o;
-		return this.start.equals(other.start) && this.end.equals(other.end) && this.variables.equals(other.variables);
 	}
 }

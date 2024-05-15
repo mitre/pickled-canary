@@ -78,7 +78,7 @@ public class Pikevm {
 
 				SavedData result;
 				try {
-					result = this.processThread(sp, curThread.pc, curThread.saved);
+					result = this.processThread(sp, curThread);
 				} catch (MemoryAccessException e) {
 					continue;
 				}
@@ -130,44 +130,42 @@ public class Pikevm {
 	 * <code>this.states</code> to be processed later if necessary.
 	 * 
 	 * @param sp
-	 * @param pc
-	 * @param saved
+	 * @param thread
 	 * @return A Result if a match is found, null otherwise.
 	 * @throws MemoryAccessException
 	 */
-	private SavedData processThread(int sp, int pc, SavedData saved) throws MemoryAccessException {
-		while (true) {
-			Step curStep = this.pattern.steps.get(pc);
-			if (curStep instanceof Byte) {
-				if (this.input.getByte(sp) == (byte) ((Byte) curStep).getValue()) {
-					this.addThread(sp + 1, pc + 1, saved);
-				}
-				break;
-			} else if (curStep instanceof MaskedByte maskedByte) {
-				byte maskedInput = (byte) (this.input.getByte(sp) & maskedByte.getMask());
-				if (maskedInput == (byte) maskedByte.getValue()) {
-					this.addThread(sp + 1, pc + 1, saved);
-				}
-				break;
-			} else if (curStep instanceof AnyByte) {
+	private SavedData processThread(int sp, Thread thread) throws MemoryAccessException {
+		int pc = thread.pc();
+		SavedData saved = thread.saved();
+		Step curStep = this.pattern.steps.get(pc);
+		if (curStep instanceof Byte byteStep) {
+			if (this.input.getByte(sp) == (byte) byteStep.getValue()) {
 				this.addThread(sp + 1, pc + 1, saved);
-				break;
-			} else if (curStep instanceof AnyByteSequence anyByteSequence) {
-				for (int i = anyByteSequence.getMin(); i <= anyByteSequence.getMax(); i += anyByteSequence.getInterval()) {
-					this.addThread(sp + i, pc + 1, saved);
-				}
-				break;
-			} else if (curStep instanceof LookupStep lookupStep) {
-				for (LookupAndCheckResult result : lookupStep.doLookup(input, sp, this.pattern.tables, saved)) {
-					this.addThread(sp + result.getSize(), pc + 1, result.getNewSaved());
-				}
-				break;
-			} else if (curStep instanceof Match) {
-				saved.end = sp;
-				return saved;
 			}
-			throw new RuntimeException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
+			return null;
+		} else if (curStep instanceof MaskedByte maskedByte) {
+			byte maskedInput = (byte) (this.input.getByte(sp) & maskedByte.getMask());
+			if (maskedInput == (byte) maskedByte.getValue()) {
+				this.addThread(sp + 1, pc + 1, saved);
+			}
+			return null;
+		} else if (curStep instanceof AnyByte) {
+			this.addThread(sp + 1, pc + 1, saved);
+			return null;
+		} else if (curStep instanceof AnyByteSequence anyByteSequence) {
+			for (int i = anyByteSequence.getMin(); i <= anyByteSequence.getMax(); i += anyByteSequence.getInterval()) {
+				this.addThread(sp + i, pc + 1, saved);
+			}
+			return null;
+		} else if (curStep instanceof LookupStep lookupStep) {
+			for (LookupAndCheckResult result : lookupStep.doLookup(input, sp, this.pattern.tables, saved)) {
+				this.addThread(sp + result.getSize(), pc + 1, result.getNewSaved());
+			}
+			return null;
+		} else if (curStep instanceof Match) {
+			saved.end = sp;
+			return saved;
 		}
-		return null;
+		throw new UnsupportedOperationException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
 	}
 }

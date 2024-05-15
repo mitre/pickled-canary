@@ -296,7 +296,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
-		Assert.assertEquals(this.program.getMinAddress().add(beqOffset + 16), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(beqOffset + 16), result.labels().get("foo"));
 	}
 
 	@Test
@@ -325,7 +325,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
-		Assert.assertEquals(this.program.getMinAddress().add(blOffset), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(blOffset), result.labels().get("foo"));
 	}
 
 	@Test
@@ -344,7 +344,7 @@ public class ArmLePickledCanaryTest extends PickledCanaryTest {
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
 		Assert.assertEquals(this.program.getMinAddress().add(ldrOffset), result.getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(ldrOffset + 0xc), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(ldrOffset + 0xc), result.labels().get("foo"));
 
 		// Also testing the RemoveDebug functionality and seeing if it matches
 		List<String> testQueryPatternExpected = new ArrayList<>();
