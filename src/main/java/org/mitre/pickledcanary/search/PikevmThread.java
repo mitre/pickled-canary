@@ -11,4 +11,4 @@ package org.mitre.pickledcanary.search;
  * and/or variable values [e.g. Q1=r0]).
  *
  */
-public record Thread(int pc, SavedData saved) {}
+public record PikevmThread(int pc, SavedData saved) {}

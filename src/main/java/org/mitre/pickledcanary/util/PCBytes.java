@@ -1,3 +1,6 @@
+
+// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+
 package org.mitre.pickledcanary.util;
 
 import java.util.ArrayList;

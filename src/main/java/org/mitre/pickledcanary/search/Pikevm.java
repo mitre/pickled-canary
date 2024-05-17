@@ -31,13 +31,13 @@ import ghidra.util.task.TaskMonitor;
  */
 public class Pikevm {
 
-	protected final States states;
+	protected final PikevmStates states;
 	protected final Pattern pattern;
 	protected final MemBuffer input;
 	protected final TaskMonitor monitor;
 
 	public Pikevm(Pattern pattern, MemBuffer input, TaskMonitor monitor) {
-		this.states = new States();
+		this.states = new PikevmStates();
 		this.pattern = pattern;
 		this.input = input;
 		this.monitor = monitor;
@@ -71,14 +71,14 @@ public class Pikevm {
 			}
 
 			while (true) {
-				Thread curThread = this.states.getNextThread(sp);
-				if (curThread == null) {
+				PikevmThread curPikevmThread = this.states.getNextThread(sp);
+				if (curPikevmThread == null) {
 					break;
 				}
 
 				SavedData result;
 				try {
-					result = this.processThread(sp, curThread);
+					result = this.processThread(sp, curPikevmThread);
 				} catch (MemoryAccessException e) {
 					continue;
 				}
@@ -121,7 +121,7 @@ public class Pikevm {
 				this.addThread(sp, pc + 1, newSavedData);
 			}
 		} else {
-			this.states.add(sp, new Thread(pc, saved));
+			this.states.add(sp, new PikevmThread(pc, saved));
 		}
 	}
 
@@ -130,13 +130,13 @@ public class Pikevm {
 	 * <code>this.states</code> to be processed later if necessary.
 	 * 
 	 * @param sp
-	 * @param thread
+	 * @param pikevmThread
 	 * @return A Result if a match is found, null otherwise.
 	 * @throws MemoryAccessException
 	 */
-	private SavedData processThread(int sp, Thread thread) throws MemoryAccessException {
-		int pc = thread.pc();
-		SavedData saved = thread.saved();
+	private SavedData processThread(int sp, PikevmThread pikevmThread) throws MemoryAccessException {
+		int pc = pikevmThread.pc();
+		SavedData saved = pikevmThread.saved();
 		Step curStep = this.pattern.steps.get(pc);
 		if (curStep instanceof Byte byteStep) {
 			if (this.input.getByte(sp) == (byte) byteStep.getValue()) {

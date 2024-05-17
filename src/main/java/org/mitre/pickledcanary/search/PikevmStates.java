@@ -10,12 +10,12 @@ import java.util.*;
  * binary (list of lists)
  *
  */
-public class States {
+public class PikevmStates {
 
-	private final List<Deque<Thread>> inner;
+	private final List<Deque<PikevmThread>> inner;
 	private final int startIdx;
 
-	public States() {
+	public PikevmStates() {
 		this.inner = new ArrayList<>();
 		this.startIdx = 0;
 	}
@@ -25,7 +25,7 @@ public class States {
 	 * @param sp the stack level
 	 * @param t the thread to add
 	 */
-	public void add(int sp, Thread t) {
+	public void add(int sp, PikevmThread t) {
 		int spIndex = sp - this.startIdx;
 		while (spIndex >= this.inner.size()) {
 			this.inner.add(new ArrayDeque<>());
@@ -38,7 +38,7 @@ public class States {
 	 * @param sp the stack level
 	 * @return the next thread in the queue for that stack level, if it exists.
 	 */
-	public Thread getNextThread(int sp) {
+	public PikevmThread getNextThread(int sp) {
 		int spIndex = sp - this.startIdx;
 		if (spIndex >= this.inner.size()) {
 			return null;
