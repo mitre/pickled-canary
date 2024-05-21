@@ -30,6 +30,7 @@ import org.mitre.pickledcanary.patterngenerator.output.steps.Step;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammarBaseVisitor;
+import org.mitre.pickledcanary.patterngenerator.output.utils.LookupStepBuilder;
 import org.mitre.pickledcanary.search.Pattern;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
@@ -280,7 +281,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	}
 
 	private LookupStep makeLookupStepFromParseResults(Collection<AssemblyParseResult> parses) {
-		LookupStep lookupStep = new LookupStep();
+		LookupStepBuilder builder = new LookupStepBuilder(currentContext.tables);
 
 		for (AssemblyParseResult p : parses) {
 			if (PickledCanary.DEBUG) {
@@ -295,12 +296,12 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 			for (AssemblyResolution res : results) {
 				if (res instanceof WildAssemblyResolvedPatterns pats) {
-					PCAssemblerUtils.addAssemblyPatternToStep(pats, currentContext.tables(), lookupStep);
+					builder.addAssemblyPattern(pats);
 				}
 			}
 		}
 
-		return lookupStep;
+		return builder.buildLookupStep();
 	}
 	
 	public JSONObject getJSONObject(boolean withDebugInfo) {

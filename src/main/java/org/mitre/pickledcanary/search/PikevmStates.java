@@ -1,9 +1,11 @@
-
 // Copyright (C) 2023 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.search;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 
 /**
  * A first-in-first-out queue of states to be processed for each step of the
