@@ -1,11 +1,5 @@
 package org.mitre.pickledcanary.patterngenerator;
 
-import java.util.*;
-
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import ghidra.app.plugin.assembler.AssemblySelector;
 import ghidra.app.plugin.assembler.sleigh.parse.AssemblyParseResult;
 import ghidra.app.plugin.assembler.sleigh.sem.AssemblyResolution;
@@ -14,28 +8,22 @@ import ghidra.app.plugin.processors.sleigh.SleighLanguage;
 import ghidra.asm.wild.WildSleighAssembler;
 import ghidra.asm.wild.WildSleighAssemblerBuilder;
 import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
-import org.mitre.pickledcanary.PickledCanary;
-import org.mitre.pickledcanary.patterngenerator.output.steps.AnyByteSequence;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Byte;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Jmp;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Label;
-import org.mitre.pickledcanary.patterngenerator.output.steps.LookupStep;
-import org.mitre.pickledcanary.patterngenerator.output.steps.MaskedByte;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Match;
-import org.mitre.pickledcanary.patterngenerator.output.steps.NegativeLookahead;
-import org.mitre.pickledcanary.patterngenerator.output.steps.OrMultiState;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Split;
-import org.mitre.pickledcanary.patterngenerator.output.steps.SplitMulti;
-import org.mitre.pickledcanary.patterngenerator.output.steps.Step;
-import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
-import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
-import org.mitre.pickledcanary.patterngenerator.generated.pc_grammarBaseVisitor;
-import org.mitre.pickledcanary.patterngenerator.output.utils.LookupStepBuilder;
-import org.mitre.pickledcanary.search.Pattern;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
-import org.mitre.pickledcanary.util.PCAssemblerUtils;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.mitre.pickledcanary.PickledCanary;
+import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
+import org.mitre.pickledcanary.patterngenerator.generated.pc_grammarBaseVisitor;
+import org.mitre.pickledcanary.patterngenerator.output.steps.Byte;
+import org.mitre.pickledcanary.patterngenerator.output.steps.*;
+import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
+import org.mitre.pickledcanary.patterngenerator.output.utils.LookupStepBuilder;
+import org.mitre.pickledcanary.search.Pattern;
+
+import java.util.*;
 
 public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
@@ -44,16 +32,11 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	private final WildSleighAssembler assembler;
 	private final TaskMonitor monitor;
 
-    // operand - binary representation tables
-
 	private final List<OrMultiState> orStates;
 
 	private final Deque<Integer> byteStack;
-
-	private PatternContext currentContext;
 	private final Deque<PatternContext> contextStack;
-
-
+	private PatternContext currentContext;
 	private JSONObject metadata;
 
 	/**
@@ -68,7 +51,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		this.currentProgram = currentProgram;
 		this.currentAddress = currentAddress;
 		this.monitor = monitor;
-        SleighLanguage language = (SleighLanguage) currentProgram.getLanguage();
+		SleighLanguage language = (SleighLanguage) currentProgram.getLanguage();
 		WildSleighAssemblerBuilder builder = new WildSleighAssemblerBuilder(language);
 		this.assembler = builder.getAssembler(new AssemblySelector(), currentProgram);
 
@@ -79,6 +62,23 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		this.contextStack = new ArrayDeque<>();
 
 		this.metadata = new JSONObject();
+	}
+
+	private static void raiseInvalidInstructionException(ParserRuleContext ctx) {
+		String instructionText = ctx.getText();
+
+		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
+			throw new QueryParseException(
+					"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction",
+					ctx);
+		}
+		else {
+			throw new QueryParseException(
+					"An assembly instruction in your pattern (" + instructionText +
+							") did not return any output. Make sure your assembly instructions" +
+							" are valid or that you are using a binary with the same architecture.",
+					ctx);
+		}
 	}
 
 	@Override
@@ -93,8 +93,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		}
 
 		var note = String.format(
-			"AnyBytesNode Start: %d End: %d Interval: %d From: Token from line #%d: Token type: PICKLED_CANARY_COMMAND data: `%s`",
-			min, max, step, ctx.start.getLine(), ctx.getText());
+				"AnyBytesNode Start: %d End: %d Interval: %d From: Token from line #%d: Token type: PICKLED_CANARY_COMMAND data: `%s`",
+				min, max, step, ctx.start.getLine(), ctx.getText());
 
 		this.currentContext.steps().add(new AnyByteSequence(min, max, step, note));
 
@@ -155,11 +155,12 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		meta = meta.substring(0, meta.length() - 10);
 		// Remove any comments
 		meta = meta.replaceAll("[\n\r]+ *;[^\n\r]*", "");
-		
+
 		// Check if our existing metadata is equal to an empty JSONObject
 		if (this.metadata.toString().equals(new JSONObject().toString())) {
 			this.metadata = new JSONObject(meta);
-		} else {
+		}
+		else {
 			throw new QueryParseException("Can not have more than one META section!", ctx);
 		}
 		return null;
@@ -206,7 +207,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		// If we have exactly two OR options, change from a SplitMulti to a Split
 		if (middleSteps.size() == 1) {
 			List<Integer> origDests =
-				((SplitMulti) this.currentContext.steps().get(currentOrState.getStartStep())).getDests();
+					((SplitMulti) this.currentContext.steps()
+							.get(currentOrState.getStartStep())).getDests();
 
 			Split newSplit = new Split(origDests.get(0));
 			newSplit.setDest2(origDests.get(1));
@@ -270,7 +272,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		}
 
 		LookupStep lookupStep = this.makeLookupStepFromParseResults(parses);
-		if (lookupStep == null) return null;
+		if (lookupStep == null)
+			return null;
 		if (lookupStep.isEmpty()) {
 			raiseInvalidInstructionException(ctx);
 		}
@@ -303,16 +306,16 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		return builder.buildLookupStep();
 	}
-	
+
 	public JSONObject getJSONObject(boolean withDebugInfo) {
 		this.currentContext.canonicalize();
 		JSONObject output = this.currentContext.getJson(this.metadata);
 
 		if (withDebugInfo) {
 			output.append("compile_info", this.getDebugJson());
-		} else {
-			ArrayList<String> compileInfo = new ArrayList<>();
-			output.put("compile_info", compileInfo); // TODO <-- should this be a JSON object?
+		}
+		else {
+			output.put("compile_info", new JSONArray());
 		}
 
 		return output;
@@ -321,21 +324,6 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	public Pattern getPattern() {
 		this.currentContext.canonicalize();
 		return this.currentContext.getPattern();
-	}
-
-	private static void raiseInvalidInstructionException(ParserRuleContext ctx) {
-		String instructionText = ctx.getText();
-
-		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
-			throw new QueryParseException(
-					"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction", ctx);
-		}
-		else {
-			throw new QueryParseException(
-					"An assembly instruction in your pattern (" + instructionText +
-							") did not return any output. Make sure your assembly instructions" +
-							" are valid or that you are using a binary with the same architecture.", ctx);
-		}
 	}
 
 	private JSONObject getDebugJson() {
