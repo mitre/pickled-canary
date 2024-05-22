@@ -27,7 +27,7 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
 	 */
-	public OperandMeta(TypeOfOperand type, List<Integer> mask, String varId) {
+	protected OperandMeta(TypeOfOperand type, List<Integer> mask, String varId) {
 		this.type = type;
 		this.mask = mask;
 		this.varId = varId;
@@ -71,6 +71,6 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 			}
 		}
 		
-		return Integer.valueOf(this.mask.size()).compareTo(Integer.valueOf(other.mask.size()));
+		return Integer.compare(this.mask.size(), other.mask.size());
 	}
 }

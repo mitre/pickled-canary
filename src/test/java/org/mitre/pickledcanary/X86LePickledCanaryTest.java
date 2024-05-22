@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import ghidra.test.ClassicSampleX86ProgramBuilder;
+import org.mitre.pickledcanary.patterngenerator.QueryParseException;
 
 public class X86LePickledCanaryTest extends PickledCanaryTest {
 	// TODO: try some nasty x86 stuff with e.g. pointer arithmetic heavy lea, GAS
@@ -260,8 +261,8 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 
 	@Test
 	public void testTwoStartMeta() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 6:1 token recognition error at: 'META`'");
+		exceptionRule.expect(QueryParseException.class);
+		exceptionRule.expectMessage("Failed to parse query at line 6 col 1: token recognition error at: 'META`'");
 		final String testQuery = ";something\n`META`\n{\"foo\":\"bar\"\n}\n`META`\n`META`";
 		generatePatternTestHelper(testQuery, "");
 	}
@@ -276,32 +277,33 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 
 	@Test
 	public void testTwoEndMeta() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 7:1 token recognition error at: 'META_END`'");
+		exceptionRule.expect(QueryParseException.class);
+		exceptionRule.expectMessage("Failed to parse query at line 7 col 1: token recognition error at: 'META_END`'");
 		final String testQuery = ";something\n`META`\n{\n\"foo\":\"bar\"\n}\n`META_END`\n`META_END`";
 		generatePatternTestHelper(testQuery, "");
 	}
 
 	@Test
 	public void testEndMetaBeforeMeta() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 1:1 token recognition error at: 'META_END`'");
+		exceptionRule.expect(QueryParseException.class);
+		exceptionRule.expectMessage("Failed to parse query at line 1 col 1: token recognition error at: 'META_END`'");
 		final String testQuery = "`META_END`\n;something\n`META`\n{\n\"foo\":\"bar\"\n}\n`META_END`\n";
 		generatePatternTestHelper(testQuery, "");
 	}
 
 	@Test
 	public void testEmptyCommand() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("Pattern lexer encountered error when processing line 2:1 mismatched input '`' expecting {'=', '&', ANY_BYTES, LABEL, BYTE_STRING}");
+		exceptionRule.expect(QueryParseException.class);
+		exceptionRule.expectMessage("Failed to parse query at line 2 col 1: mismatched input '`' expecting {'=', '&', ANY_BYTES, LABEL, BYTE_STRING}");
 		final String testQuery = ";something\n``";
 		generatePatternTestHelper(testQuery, "");
 	}
 
 	@Test
 	public void testUnbalancedCommand() {
-		exceptionRule.expect(RuntimeException.class);
-		exceptionRule.expectMessage("This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction. Check this line: 'MOV `'");
+		exceptionRule.expect(QueryParseException.class);
+		exceptionRule.expectMessage("Failed to parse query at line 2 col 0: This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction\n" +
+				"Check this line: 'MOV `'");
 		final String testQuery = ";something\nMOV `\n;foo";
 		generatePatternTestHelper(testQuery, "");
 	}

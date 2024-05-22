@@ -9,13 +9,13 @@ package org.mitre.pickledcanary.patterngenerator.output.steps;
  */
 public abstract class StepBranchless extends Step {
 
-	public StepBranchless(StepType stepType, String note) {
+	protected StepBranchless(StepType stepType, String note) {
 		super(stepType, note);
 	}
 
 	@Override
 	public void increment(int amount, int threshold) {
-
+		// Do nothing
 	}
 
 }

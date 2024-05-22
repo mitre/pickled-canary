@@ -49,11 +49,11 @@ public class AnyByteSequence extends StepBranchless {
 
 	private void verifyInputs(int minInput, int maxInput, Integer intervalInput) {
 		if (maxInput < minInput || minInput < 0 || intervalInput != null && intervalInput < 0) {
-			throw new RuntimeException(String.format(
+			throw new IllegalArgumentException(String.format(
 					"ANY_BYTES min, max and interval must be nonnegative, and min must be smaller than or equal to max: `%s`",
 					toStringHelper(minInput, maxInput, intervalInput)));
 		} else if (intervalInput != null && (intervalInput > (maxInput - minInput)) && (maxInput != minInput)) {
-			throw new RuntimeException(String.format("ANY_BYTES interval must be less than (max-min): `%s`",
+			throw new IllegalArgumentException(String.format("ANY_BYTES interval must be less than (max-min): `%s`",
 					toStringHelper(minInput, maxInput, intervalInput)));
 		}
 	}

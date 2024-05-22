@@ -28,7 +28,7 @@ public class Byte extends StepBranchless {
 
 	private void checkValue(int valueIn) {
 		if (valueIn > 255) {
-			throw new RuntimeException("Byte value must be <255!");
+			throw new IllegalArgumentException("Byte value must be <255!");
 		}
 	}
 

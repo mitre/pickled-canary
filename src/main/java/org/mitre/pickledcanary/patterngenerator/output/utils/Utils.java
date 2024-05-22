@@ -7,16 +7,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-//import org.mitre.pickledcanary.assembler.Assembler;
-
-//import ghidra.app.plugin.processors.sleigh.SleighDebugLogger;
-//import ghidra.app.plugin.processors.sleigh.SleighDebugLogger.SleighDebugMode;
-//import ghidra.program.model.address.Address;
-//import ghidra.program.model.listing.Instruction;
-//import ghidra.program.model.listing.Program;
-//import ghidra.program.model.mem.MemoryAccessException;
-
 public class Utils {
+	private Utils() {}
 
 	/**
 	 * Get key for the tables. Key consists of the instruction's value as a binary
@@ -29,7 +21,8 @@ public class Utils {
 	 */
 	public static String maskToX(String mask, String val) {
 		if (mask.length() != val.length()) {
-			throw new RuntimeException(
+			throw new IllegalArgumentException(
+					"mask and value must be the same length! " +
 					"Mask: " + mask + " Len: " + mask.length() + " Val: " + val + " Len: " + val.length());
 		}
 
@@ -103,10 +96,10 @@ public class Utils {
 		}
 
 		// masks and values shouldn't be empty lists
-		if (masks.size() == 0) {
+		if (masks.isEmpty()) {
 			masks.add(0);
 		}
-		if (vals.size() == 0) {
+		if (vals.isEmpty()) {
 			vals.add(0);
 		}
 

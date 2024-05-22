@@ -15,7 +15,7 @@ public abstract class Step {
 	protected final StepType stepType;
 	protected final String note;
 
-	public Step(StepType stepType, String note) {
+	protected Step(StepType stepType, String note) {
 		this.stepType = stepType;
 		this.note = note;
 	}

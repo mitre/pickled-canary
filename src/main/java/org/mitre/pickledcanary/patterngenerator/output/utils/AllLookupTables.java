@@ -3,12 +3,12 @@
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
+import ghidra.asm.wild.WildOperandInfo;
 import org.json.JSONArray;
+import org.mitre.pickledcanary.util.PCBytes;
 
 //@formatter:off
 /**
@@ -78,11 +78,11 @@ public class AllLookupTables {
 	}
 
 	private void populateStuff() {
-		for (String key : tables.keySet()) {
-			bitMaskToLookupTableHash.put(key, tables.get(key).hashCode());
+		for (Map.Entry<String, LookupTable> stringLookupTableEntry : tables.entrySet()) {
+			bitMaskToLookupTableHash.put(stringLookupTableEntry.getKey(), stringLookupTableEntry.getValue().hashCode());
 		}
 		noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
-		noDupTables.sort((a,b)-> a.compareTo(b));
+		noDupTables.sort(Comparator.naturalOrder());
 		for (int i = 0; i < noDupTables.size(); i++) {
 			lookupTableHashToOutIdx.put(noDupTables.get(i).hashCode(), i);
 		}
@@ -124,9 +124,25 @@ public class AllLookupTables {
 	 *
 	 */
 	public List<LookupTable> getPatternTables() {
-		if (bitMaskToLookupTableHash.size() == 0) {
+		if (bitMaskToLookupTableHash.isEmpty()) {
 			this.populateStuff();
 		}
 		return noDupTables;
+	}
+
+	public void addOperand(WildOperandInfo assemblyOperandData, AssemblyPatternBlock assemblyPatternBlock, String tableKey) {
+		// get the current operand
+		String operand = assemblyOperandData.choice().toString();
+
+		AssemblyPatternBlock patternBlock = assemblyOperandData.location();
+
+		// get binary masks and values of operand above
+		List<Integer> masks = PCBytes.integerList(patternBlock.trim().getMaskAll());
+		List<Integer> values = PCBytes.integerList(patternBlock.getMaskedValue(assemblyPatternBlock.getValsAll())
+				.trim()
+				.getValsAll());
+
+		// put mapping of operand to masks and values in table named tableKey
+		this.put(tableKey, operand, masks, values);
 	}
 }

@@ -16,7 +16,7 @@ public abstract class ConcreteOperand {
 
 	private final TypeOfOperand type;
 
-	public ConcreteOperand(TypeOfOperand x) {
+	protected ConcreteOperand(TypeOfOperand x) {
 		this.type = x;
 	}
 

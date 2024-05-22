@@ -31,16 +31,64 @@ import ghidra.util.task.TaskMonitor;
  */
 public class Pikevm {
 
-	protected final States states;
+	protected final PikevmStates states;
 	protected final Pattern pattern;
 	protected final MemBuffer input;
 	protected final TaskMonitor monitor;
 
 	public Pikevm(Pattern pattern, MemBuffer input, TaskMonitor monitor) {
-		this.states = new States();
+		this.states = new PikevmStates();
 		this.pattern = pattern;
 		this.input = input;
 		this.monitor = monitor;
+	}
+
+	/**
+	 * Execute this pikevm with the parameters supplied on creation.
+	 *
+	 * @return
+	 * @throws MemoryAccessException
+	 */
+	public SavedData run() {
+		int sp = 0;
+		this.addThread(sp, 0, new SavedData());
+
+		// This will throw an exception when it reaches the end
+		while (true) {
+
+			if (sp % 256 == 0 && this.monitor.isCancelled()) {
+				return null;
+			}
+
+			// bail when we've reached one past the end of our readable bytes.
+			// We process one past the end here to allow hitting a match on the last byte.
+			// Another possible option is to move Match to addThread and handle returning
+			// from there upon match
+			try {
+				this.input.getByte(Math.max(0, sp - 1));
+			} catch (MemoryAccessException e) {
+				break;
+			}
+
+			while (true) {
+				PikevmThread curPikevmThread = this.states.getNextThread(sp);
+				if (curPikevmThread == null) {
+					break;
+				}
+
+				SavedData result;
+				try {
+					result = this.processThread(sp, curPikevmThread);
+				} catch (MemoryAccessException e) {
+					continue;
+				}
+				if (result != null) {
+					return result;
+				}
+			}
+			sp += 1;
+		}
+		return null;
 	}
 
 	/**
@@ -53,27 +101,27 @@ public class Pikevm {
 	 * @param pc
 	 * @param saved
 	 */
-	private void add_thread(int sp, int pc, SavedData saved) {
-		Step cur_step = this.pattern.steps.get(pc);
-		if (cur_step instanceof Jmp) {
-			this.add_thread(sp, ((Jmp) cur_step).getDest(), saved);
-		} else if (cur_step instanceof Split) {
-			this.add_thread(sp, ((Split) cur_step).getDest1(), new SavedData(saved));
-			this.add_thread(sp, ((Split) cur_step).getDest2(), saved);
-		} else if (cur_step instanceof SplitMulti) {
-			for (int dest : ((SplitMulti) cur_step).getDests()) {
-				this.add_thread(sp, dest, new SavedData(saved));
+	private void addThread(int sp, int pc, SavedData saved) {
+		Step curStep = this.pattern.steps.get(pc);
+		if (curStep instanceof Jmp jmp) {
+			this.addThread(sp, jmp.getDest(), saved);
+		} else if (curStep instanceof Split split) {
+			this.addThread(sp, split.getDest1(), new SavedData(saved));
+			this.addThread(sp, split.getDest2(), saved);
+		} else if (curStep instanceof SplitMulti splitMulti) {
+			for (int dest : splitMulti.getDests()) {
+				this.addThread(sp, dest, new SavedData(saved));
 			}
-		} else if (cur_step instanceof SaveStart) {
+		} else if (curStep instanceof SaveStart) {
 			saved.start = sp;
-			this.add_thread(sp, pc + 1, saved);
-		} else if (cur_step instanceof Label) {
+			this.addThread(sp, pc + 1, saved);
+		} else if (curStep instanceof Label label) {
 			SavedData newSavedData = new SavedData(saved);
-			if (newSavedData.addOrFail(((Label) cur_step).getValue(), input.getAddress().add(sp).getUnsignedOffset())) {
-				this.add_thread(sp, pc + 1, newSavedData);
+			if (newSavedData.addOrFail(label.getValue(), input.getAddress().add(sp).getUnsignedOffset())) {
+				this.addThread(sp, pc + 1, newSavedData);
 			}
 		} else {
-			this.states.add(sp, new Thread(pc, saved));
+			this.states.add(sp, new PikevmThread(pc, saved));
 		}
 	}
 
@@ -82,98 +130,42 @@ public class Pikevm {
 	 * <code>this.states</code> to be processed later if necessary.
 	 * 
 	 * @param sp
-	 * @param pc
-	 * @param saved
+	 * @param pikevmThread
 	 * @return A Result if a match is found, null otherwise.
 	 * @throws MemoryAccessException
 	 */
-	private SavedData process_thread(int sp, int pc, SavedData saved) throws MemoryAccessException {
-		while (true) {
-			Step cur_step = this.pattern.steps.get(pc);
-			if (cur_step instanceof Byte) {
-				if (this.input.getByte(sp) == (byte) ((Byte) cur_step).getValue()) {
-					this.add_thread(sp + 1, pc + 1, saved);
-				}
-				break;
-			} else if (cur_step instanceof MaskedByte) {
-				MaskedByte x = ((MaskedByte) cur_step);
-				byte masked_input = (byte) (this.input.getByte(sp) & x.getMask());
-				if (masked_input == (byte) x.getValue()) {
-					this.add_thread(sp + 1, pc + 1, saved);
-				}
-				break;
-			} else if (cur_step instanceof AnyByte) {
-				this.add_thread(sp + 1, pc + 1, saved);
-				break;
-			} else if (cur_step instanceof AnyByteSequence) {
-				AnyByteSequence x = (AnyByteSequence) cur_step;
-				for (int i = x.getMin(); i <= x.getMax(); i += x.getInterval()) {
-					this.add_thread(sp + i, pc + 1, saved);
-				}
-				break;
-			} else if (cur_step instanceof LookupStep) {
-
-				LookupStep x = (LookupStep) cur_step;
-				for (LookupAndCheckResult result : x.doLookup(input, sp, this.pattern.tables, saved)) {
-					this.add_thread(sp + result.getSize(), pc + 1, result.getNewSaved());
-
-				}
-				break;
-			} else if (cur_step instanceof Match) {
-				saved.end = sp;
-				return saved;
+	private SavedData processThread(int sp, PikevmThread pikevmThread) throws MemoryAccessException {
+		int pc = pikevmThread.pc();
+		SavedData saved = pikevmThread.saved();
+		Step curStep = this.pattern.steps.get(pc);
+		if (curStep instanceof Byte byteStep) {
+			if (this.input.getByte(sp) == (byte) byteStep.getValue()) {
+				this.addThread(sp + 1, pc + 1, saved);
 			}
-			throw new RuntimeException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
-
+			return null;
+		} else if (curStep instanceof MaskedByte maskedByte) {
+			byte maskedInput = (byte) (this.input.getByte(sp) & maskedByte.getMask());
+			if (maskedInput == (byte) maskedByte.getValue()) {
+				this.addThread(sp + 1, pc + 1, saved);
+			}
+			return null;
+		} else if (curStep instanceof AnyByte) {
+			this.addThread(sp + 1, pc + 1, saved);
+			return null;
+		} else if (curStep instanceof AnyByteSequence anyByteSequence) {
+			for (int i = anyByteSequence.getMin(); i <= anyByteSequence.getMax(); i += anyByteSequence.getInterval()) {
+				this.addThread(sp + i, pc + 1, saved);
+			}
+			return null;
+		} else if (curStep instanceof LookupStep lookupStep) {
+			for (LookupAndCheckResult result : lookupStep.doLookup(input, sp, this.pattern.tables, saved)) {
+				this.addThread(sp + result.getSize(), pc + 1, result.getNewSaved());
+			}
+			return null;
+		} else if (curStep instanceof Match) {
+			saved.end = sp;
+			return saved;
 		}
-		return null;
-	}
-
-	/**
-	 * Execute this pikevm with the parameters supplied on creation.
-	 * 
-	 * @return
-	 * @throws MemoryAccessException
-	 */
-	public SavedData run() {
-		int sp = 0;
-		this.add_thread(sp, 0, new SavedData());
-
-		// This will throw an exception when it reaches the end
-		while (true) {
-
-			if (sp % 256 == 0 && this.monitor.isCancelled()) {
-				return null;
-			}
-
-			// bail when we've reached one past the end of our readable bytes.
-			// We process one past the end here to allow hitting a match on the last byte.
-			// Another possible option is to move Match to add_thread and handle returning
-			// from there upon match
-			try {
-				this.input.getByte(Math.max(0, sp - 1));
-			} catch (MemoryAccessException e) {
-				break;
-			}
-
-			while (true) {
-				Thread cur_thread = this.states.get_next_thread(sp);
-				if (cur_thread == null) {
-					break;
-				}
-
-				SavedData result;
-				try {
-					result = this.process_thread(sp, cur_thread.pc, cur_thread.saved);
-				} catch (MemoryAccessException e) {
-					continue;
-				}
-				if (result != null) {
-					return result;
-				}
-			}
-			sp += 1;
-		}
-		return null;
+		throw new UnsupportedOperationException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
 	}
 }

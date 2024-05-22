@@ -36,11 +36,11 @@ public class SplitMulti extends Step {
 	@Override
 	public JSONObject getJson() {
 		JSONObject out = super.getJson();
-		JSONArray dests_json = new JSONArray();
+		JSONArray destsJson = new JSONArray();
 		for (Integer d : this.dests) {
-			dests_json.put(d);
+			destsJson.put(d);
 		}
-		out.put("dests", dests_json);
+		out.put("dests", destsJson);
 		return out;
 	}
 

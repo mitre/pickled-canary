@@ -31,6 +31,7 @@ import ghidra.util.datastruct.Accumulator;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.table.AddressBasedTableModel;
 import ghidra.util.task.TaskMonitor;
+import java.util.Arrays;
 
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 
@@ -40,7 +41,7 @@ import docking.widgets.table.TableColumnDescriptor;
 /** contains the GUI design for the Results tab */
 public class PickledCanarySearchTableModel extends AddressBasedTableModel<SavedDataAddresses> {
 
-	private final PickledCanarySearcher searcher;
+	private final PickledCanarySearcher searcher;  // todo: make this serializable
 
 	public PickledCanarySearchTableModel(PickledCanarySearcher searcher, PluginTool tool) {
 		super("Pickled Canary Search Results", tool, searcher.getProgram(), null, true);
@@ -56,7 +57,8 @@ public class PickledCanarySearchTableModel extends AddressBasedTableModel<SavedD
 					"Encountered an error while trying to search for the given pattern. See details for more information.",
 					e);
 			searcher.setCompiledPattern(
-					"Pattern compile failed!\n" + e.getMessage() + "\n\n" + e.getStackTrace().toString());
+					"Pattern compile failed!\n" + e.getMessage() + "\n\n" +
+							Arrays.toString(e.getStackTrace()));
 		}
 	}
 

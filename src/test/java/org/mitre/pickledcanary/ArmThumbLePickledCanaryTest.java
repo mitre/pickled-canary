@@ -119,7 +119,7 @@ public class ArmThumbLePickledCanaryTest extends PickledCanaryTest {
 
 		SavedDataAddresses result = results.get(0);
 		Assert.assertEquals(this.program.getMinAddress(), result.getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(0x153c), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x153c), result.labels().get("foo"));
 
 	}
 
@@ -131,7 +131,7 @@ public class ArmThumbLePickledCanaryTest extends PickledCanaryTest {
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
 		Assert.assertEquals(this.program.getMinAddress().add(bnewOffset), result.getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(bnewOffset + 0xc), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(bnewOffset + 0xc), result.labels().get("foo"));
 	}
 
 	@Test
@@ -149,13 +149,13 @@ public class ArmThumbLePickledCanaryTest extends PickledCanaryTest {
 				this.program.getMinAddress(), ldrPatternMoreSpecific);
 
 		Assert.assertEquals(1, results.size());
-		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.get(0).labels.get("Q1"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.getFirst().labels().get("Q1"));
 
 		results = PickledCanary.parseAndRunAll(monitor, this.program, this.program.getMinAddress(), ldrPattern);
 
 		Assert.assertEquals(2, results.size());
 
-		Assert.assertEquals(this.program.getMinAddress().add(0x0001f158), results.get(0).labels.get("Q1"));
-		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.get(1).labels.get("Q1"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x0001f158), results.get(0).labels().get("Q1"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.get(1).labels().get("Q1"));
 	}
 }

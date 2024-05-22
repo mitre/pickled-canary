@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
 import org.mitre.pickledcanary.patterngenerator.PCVisitor;
+import org.mitre.pickledcanary.patterngenerator.QueryParseException;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_lexer;
 import org.mitre.pickledcanary.search.Pattern;
@@ -36,12 +37,14 @@ import ghidra.util.task.TaskMonitor;
  */
 public class PickledCanary {
 
+	public static final boolean DEBUG = true;
+
 	static class MyErrorListener extends BaseErrorListener {
 		@Override
 		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
 				int charPositionInLine,
 				String msg, RecognitionException e) {
-			throw new RuntimeException("Pattern lexer encountered error when processing line " + line + ":" + charPositionInLine + " " + msg);
+			throw new QueryParseException(msg, line, charPositionInLine);
 		}
 	}
 	
@@ -92,7 +95,7 @@ public class PickledCanary {
 	 */
 	public static String compile(TaskMonitor monitor, String pattern, Program program,
 			Address address, boolean removeDebugInfo) {
-		return createAndRunVisitor(monitor, pattern, program, address).getJSON(removeDebugInfo);
+		return createAndRunVisitor(monitor, pattern, program, address).getJSONObject(!removeDebugInfo).toString();
 	}
 
 	public static Pattern compile(TaskMonitor monitor, String pattern, Program program,
@@ -127,7 +130,8 @@ public class PickledCanary {
 	 */
 	public static Pattern compileWrapped(TaskMonitor monitor, String pattern, Program program,
 			Address address) {
-		return PickledCanary.createAndRunVisitor(monitor, pattern, program, address).getPatternWrapped();
+		PCVisitor visitor = createAndRunVisitor(monitor, pattern, program, address);
+		return visitor.getPattern().wrap();
 	}
 
 	/**

@@ -180,7 +180,7 @@ public class MipsBePickledCanaryTest extends PickledCanaryTest {
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
-		Assert.assertEquals(this.program.getMinAddress().add(0x1008440), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x1008440), result.labels().get("foo"));
 	}
 
 	@Test
@@ -198,7 +198,7 @@ public class MipsBePickledCanaryTest extends PickledCanaryTest {
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
-		Assert.assertEquals(this.program.getMinAddress().add(0x07000004), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x07000004), result.labels().get("foo"));
 	}
 
 	@Test
@@ -216,7 +216,7 @@ public class MipsBePickledCanaryTest extends PickledCanaryTest {
 
 		Assert.assertEquals(1, results.size());
 		SavedDataAddresses result = results.get(0);
-		Assert.assertEquals(this.program.getMinAddress().add(0x6000008), result.labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x6000008), result.labels().get("foo"));
 	}
 
 	@Test

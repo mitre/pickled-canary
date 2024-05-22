@@ -1,11 +1,10 @@
-
 // Copyright (C) 2023 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.data.Pointer32DataType;
+import ghidra.program.model.mem.Memory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,9 +15,8 @@ import org.mitre.pickledcanary.search.Pattern;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 import org.mitre.pickledcanary.search.VmSearch;
 
-import ghidra.program.database.ProgramBuilder;
-import ghidra.program.model.data.Pointer32DataType;
-import ghidra.program.model.mem.Memory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SearchTest extends PickledCanaryTest {
 
@@ -55,9 +53,10 @@ public class SearchTest extends PickledCanaryTest {
 		List<SavedDataAddresses> result = vm.runAll(monitor);
 		if (result.size() == 0) {
 			System.out.println("No match");
-		} else {
+		}
+		else {
 			System.out.println("Match!");
-			System.out.println(result.toString());
+			System.out.println(result);
 		}
 		Assert.assertEquals(3, result.size());
 		Assert.assertEquals(memory.getMinAddress().add(1), result.get(0).getStart());
@@ -72,29 +71,30 @@ public class SearchTest extends PickledCanaryTest {
 	public void testCompileAndRunPattern() {
 		String patternIn = "tst r3,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-			program.getMemory().getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
+				program.getMemory().getMinAddress(), patternIn);
+		Assert.assertEquals(this.program.getMinAddress(), results.getFirst().getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
 	}
 
 	@Test
 	public void testCompileAndRunPatternWildcard() {
 		String patternIn = "tst `Q1`,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-			program.getMemory().getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
-		Assert.assertEquals("r3", results.get(0).variables.get("Q1").getValue());
+				program.getMemory().getMinAddress(), patternIn);
+		Assert.assertEquals(this.program.getMinAddress(), results.getFirst().getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
+		Assert.assertEquals("r3", results.getFirst().variables().get("Q1").getValue());
 	}
 
 	@Test
 	public void testCompileAndRunPatternLabel() {
 		String patternIn = "`=0x13`\n`foo:`\n`=0xe3`";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
-			this.program.getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress().add(2), results.get(0).getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
-		Assert.assertEquals(this.program.getMinAddress().add(3), results.get(0).labels.get("foo"));
+				this.program.getMinAddress(), patternIn);
+		Assert.assertEquals(this.program.getMinAddress().add(2), results.getFirst().getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
+		Assert.assertEquals(this.program.getMinAddress().add(3),
+				results.getFirst().labels().get("foo"));
 	}
 
 }
