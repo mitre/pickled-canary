@@ -10,14 +10,8 @@ jobs:
   # This builds the rust search components for x86 macs
   build_rust_mac_x86_64:
     runs-on: macos-latest
-    env:
-      RUST_VERSION: nightly-2024-05-01
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust Nightly
-        run: |
-          rustup toolchain install $RUST_VERSION --component rustfmt clippy
-          rustup default $RUST_VERSION
       - name: Build
         working-directory: search
         run: cargo build --release --verbose
@@ -30,14 +24,11 @@ jobs:
   # This builds and tests the rust search components for Linux and Windows
   build_rust:
     runs-on: ubuntu-latest
-    env:
-      RUST_VERSION: nightly-2024-05-01
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust Nightly
+        working-directory: search
         run: |
-          rustup toolchain install $RUST_VERSION --component rustfmt clippy
-          rustup default $RUST_VERSION
           sudo apt-get install -yqq gcc-mingw-w64
           rustup target add x86_64-pc-windows-gnu
           rustup component add rust-std-x86_64-pc-windows-gnu
@@ -52,9 +43,7 @@ jobs:
         run: cargo build --release --verbose
       - name: Build Windows
         working-directory: search
-        run: |
-          rustup component list --installed
-          cargo build --release --verbose --target x86_64-pc-windows-gnu
+        run: cargo build --release --verbose --target x86_64-pc-windows-gnu
       - name: Run tests
         working-directory: search
         run: cargo test --verbose
