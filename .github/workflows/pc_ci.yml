@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Nightly
+      - name: Install Windows Rust cross compiler
         working-directory: search
         run: |
           sudo apt-get install -yqq gcc-mingw-w64
@@ -118,7 +118,7 @@ jobs:
           echo "trying ${{ matrix.GHIDRA_VERSION }} on ${{ matrix.GHIDRA_BUILD_DATE }}"
           mkdir ../Ghidra && wget --no-check-certificate -O ghidra.zip $GHIDRA_URL && unzip ghidra.zip && rm ghidra.zip && mv ghidra* ../Ghidra
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
@@ -139,6 +139,7 @@ jobs:
       - name: Archive PC Extension
         uses: actions/upload-artifact@v4
         with:
+          name: pickled_canary-${{ env.GHIDRA_LABEL }}
           path: dist/*.zip
       - name: Archive Coverage Report
         uses: actions/upload-artifact@v4
