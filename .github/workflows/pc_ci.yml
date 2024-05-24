@@ -11,12 +11,12 @@ jobs:
   build_rust_mac_x86_64:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build
         working-directory: search
         run: cargo build --release --verbose
       - name: Archive PC Rust
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pickled_canary_rust_tools_mac_x86_64
           path: search/target/release/treesearchtool
@@ -25,7 +25,7 @@ jobs:
   build_rust:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Rust Nightly
         working-directory: search
         run: |
@@ -53,7 +53,7 @@ jobs:
           mkdir target/release/binaries
           mv target/release/treesearchtool target/x86_64-pc-windows-gnu/release/treesearchtool.exe target/release/binaries
       - name: Archive PC Rust
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pickled_canary_rust_tools
           path: search/target/release/binaries/*
@@ -109,7 +109,7 @@ jobs:
     env:
       GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get latest Ghidra version
         env:
@@ -137,11 +137,11 @@ jobs:
           GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
         run: gradle test jacocoTestReport
       - name: Archive PC Extension
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/*.zip
       - name: Archive Coverage Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
           path: build/reports/jacoco/test/*
@@ -153,11 +153,11 @@ jobs:
     needs: [build, build_rust, build_rust_mac_x86_64]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Make ouptut directory
         run: mkdir output_release
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: output_release
           merge-multiple: true
