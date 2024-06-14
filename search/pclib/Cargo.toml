@@ -15,11 +15,11 @@ treesearchlib = { path = "../treesearchlib" }
 bitvec = "~1.0"
 memmap2 = "0.7.0"
 serde_json = "1.0"
-serde = { version = "1.0",  features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-criterion = {version="0.5", features=["html_reports"]}
-rand="0.8.5"
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = "0.8.5"
 
 [[bench]]
 name = "rustlibtest"
