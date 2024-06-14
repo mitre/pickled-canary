@@ -31,6 +31,7 @@
 plugins {
     id("java")
     id("jacoco")
+	id("antlr")
 }
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir = "/Users/wjordan/Projects/PickledCanary/bin/ghidra_11.1_DEV"
@@ -74,6 +75,7 @@ dependencies {
 	testImplementation 'org.jacoco:org.jacoco.agent:0.8.9'
     testImplementation 'org.jacoco:org.jacoco.ant:0.8.9'
 
+	antlr "org.antlr:antlr4:4.13.1"
 }
 
 jacoco {
@@ -89,6 +91,10 @@ jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
 }
 
+generateGrammarSource {
+	arguments += ["-visitor", "-package", "org.mitre.pickledcanary.patterngenerator.generated"]
+	outputDirectory = new File("${project.buildDir}/generated-src/antlr/main/org/mitre/pickledcanary/patterngenerator/generated".toString())
+}
 
 // Exclude additional files from the built extension
 // Ex: buildExtension.exclude '.idea/**'
