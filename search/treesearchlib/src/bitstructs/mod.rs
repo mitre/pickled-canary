@@ -161,7 +161,7 @@ pub mod tests {
 
     pub fn check_operands_results(results: Vec<ConcreteOperand>, expected_op: &str) {
         assert_eq!(results.len(), 3);
-        match results.get(0).unwrap() {
+        match results.first().unwrap() {
             ConcreteOperand::Field { var_id, name } => {
                 assert_eq!(name, expected_op);
                 assert_eq!(*var_id, "Q1");

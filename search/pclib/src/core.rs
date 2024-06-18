@@ -569,7 +569,7 @@ mod tests {
             );
 
             // Check the first result
-            let result = results.get(0).unwrap();
+            let result = results.first().unwrap();
             assert_eq!(result.match_number.unwrap(), 0, "Count is: {}", count);
             let saved = result.saved.as_ref().expect("msg");
             // Ensure only one label is populated
@@ -622,7 +622,7 @@ mod tests {
             );
 
             // Check the first result
-            let result = results.get(0).unwrap();
+            let result = results.first().unwrap();
             assert_eq!(result.match_number.unwrap(), 0, "Count is: {}", count);
             let saved = result.saved.as_ref().expect("msg");
             // Ensure only one label is populated
@@ -708,7 +708,7 @@ mod tests {
             );
 
             // Check the first result
-            let result = results.get(0).unwrap();
+            let result = results.first().unwrap();
             assert_eq!(result.match_number.unwrap(), 0, "Count is: {}", count);
             let saved = result.saved.as_ref().expect("msg");
             // Ensure only one label is populated

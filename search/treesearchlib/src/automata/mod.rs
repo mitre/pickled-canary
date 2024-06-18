@@ -35,7 +35,6 @@ pub use pikevm_loop_ring_rc_priority::run_program;
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
 
     use crate::bitstructs::{AddressedBits, InstructionEncoding, LookupType, Op, Pattern};
     use bitvec::prelude::*;
@@ -192,7 +191,7 @@ mod tests {
 
             eprintln!("{:?}", saved_results);
             assert_eq!(saved_results.start.unwrap(), 0);
-            assert!(saved_results.captures.get(&1).is_none());
+            assert!(!saved_results.captures.contains_key(&1));
         }
     }
 
@@ -244,7 +243,7 @@ mod tests {
             assert!(results.saved.is_some());
             let saved_results = results.saved.unwrap();
             // eprintln!("{:?}", saved_results);
-            assert!(saved_results.captures.get(&0).is_none());
+            assert!(!saved_results.captures.contains_key(&0));
             assert_eq!(*saved_results.captures.get(&1).unwrap(), 0);
         }
     }
@@ -280,7 +279,7 @@ mod tests {
             let saved_results = results.saved.unwrap();
             // Make sure we match the first 5, not the second one
             assert_eq!(saved_results.start.unwrap(), 4);
-            assert!(saved_results.captures.get(&1).is_none());
+            assert!(!saved_results.captures.contains_key(&1));
         }
     }
 
@@ -848,7 +847,7 @@ mod tests {
             assert!(results.saved.is_some(), "Should have some saved data");
             let saved = results.saved.unwrap();
             assert!(
-                saved.labels.get("foo").is_some(),
+                saved.labels.contains_key("foo"),
                 "Should have a label 'foo'"
             );
             assert_eq!(*saved.labels.get("foo").unwrap(), foo_value);
@@ -892,7 +891,7 @@ mod tests {
             tables: vec![],
         };
 
-        let converted_prog: Pattern<Msb0> = prog_json.try_into().unwrap(); // converting json into bitstruct using from method
+        let converted_prog: Pattern<Msb0> = prog_json.into(); // converting json into bitstruct using from method
         assert_eq!(
             converted_prog, real_prog,
             "Expected JSON to match Bitstruct pattern"
