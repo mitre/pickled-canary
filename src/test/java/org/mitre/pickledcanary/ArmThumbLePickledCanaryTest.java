@@ -149,7 +149,7 @@ public class ArmThumbLePickledCanaryTest extends PickledCanaryTest {
 				this.program.getMinAddress(), ldrPatternMoreSpecific);
 
 		Assert.assertEquals(1, results.size());
-		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.getFirst().labels().get("Q1"));
+		Assert.assertEquals(this.program.getMinAddress().add(0x0001f15c), results.get(0).labels().get("Q1"));
 
 		results = PickledCanary.parseAndRunAll(monitor, this.program, this.program.getMinAddress(), ldrPattern);
 

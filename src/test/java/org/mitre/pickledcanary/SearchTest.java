@@ -72,8 +72,8 @@ public class SearchTest extends PickledCanaryTest {
 		String patternIn = "tst r3,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
 				program.getMemory().getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress(), results.getFirst().getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
+		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
 	}
 
 	@Test
@@ -81,9 +81,9 @@ public class SearchTest extends PickledCanaryTest {
 		String patternIn = "tst `Q1`,#0x40";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
 				program.getMemory().getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress(), results.getFirst().getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
-		Assert.assertEquals("r3", results.getFirst().variables().get("Q1").getValue());
+		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
+		Assert.assertEquals("r3", results.get(0).variables().get("Q1").getValue());
 	}
 
 	@Test
@@ -91,10 +91,10 @@ public class SearchTest extends PickledCanaryTest {
 		String patternIn = "`=0x13`\n`foo:`\n`=0xe3`";
 		List<SavedDataAddresses> results = PickledCanary.parseAndRunAll(monitor, this.program,
 				this.program.getMinAddress(), patternIn);
-		Assert.assertEquals(this.program.getMinAddress().add(2), results.getFirst().getStart());
-		Assert.assertEquals(this.program.getMinAddress().add(4), results.getFirst().getEnd());
+		Assert.assertEquals(this.program.getMinAddress().add(2), results.get(0).getStart());
+		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
 		Assert.assertEquals(this.program.getMinAddress().add(3),
-				results.getFirst().labels().get("foo"));
+				results.get(0).labels().get("foo"));
 	}
 
 }
