@@ -1,6 +1,6 @@
 [package]
 name = "treesearchlib"
-version = "0.0.6"
+version = "0.1.0"
 authors = ["Peter <plucia@mitre.org>"]
 edition = "2018"
 license-file = "LICENSE.txt"

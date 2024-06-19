@@ -5,7 +5,7 @@ from setuptools_rust import Binding, RustExtension
 
 setup(
     name="Pickled-Canary",
-    version="0.0.6",
+    version="0.1.0",
     rust_extensions=[RustExtension("pickled_canary.pickled_canary_lib", binding=Binding.NoBinding, path="pclib/Cargo.toml")],
     packages=["pickled_canary"],
     # rust extensions are not zip safe, just like C-extensions.
