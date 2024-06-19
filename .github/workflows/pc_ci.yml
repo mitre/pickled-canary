@@ -174,8 +174,6 @@ jobs:
           mv *_coverage_report ../output_release_coverage
           mv pickled_canary_rust_tools_mac_x86_64/treesearchtool pickled_canary_rust_tools/treesearchtool_mac_x86_64
           rmdir pickled_canary_rust_tools_mac_x86_64
-          mv artifact/* .
-          rmdir artifact
           zip -r pickled_canary-${{ github.ref_name }}.zip *
           ls -la
           cp pickled_canary-${{ github.ref_name }}.zip ../
