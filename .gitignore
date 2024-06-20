@@ -11,6 +11,7 @@ bin
 /build/
 search/pickled_canary/pickled_canary_lib.cpython-38-x86_64-linux-gnu.so
 /dist
+generated-src/
 
 *.cpython-312-darwin.so
 
