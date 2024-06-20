@@ -128,21 +128,12 @@ If the extension still seems to be installed:
 ## Ghidra Development Setup
 
 1. Clone this repository
-1. Generate the Antlr derived source code by running: `gradle build`
 1. Open Eclipse (with Ghidra Dev Tools already installed)
-1. In Eclipse click `File` > `Open Projects from File System...`, chose the
-   cloned copy of this repository, and click `Finish`
-1. In the Eclipse `Package Explorer`:
-   1. Right click on the newly created project and choose `GhidraDev` > `Link
-      Ghidra...` and choose your Ghidra installation.
-   1. Right click on `lib` > `json-20230618.jar` and choose `Build Path` > `Add
-      to Build Path`
-   1. Right click on `lib` > `antlr4-runtime-4.13.1.jar` and choose 
-      `Build Path` > `Add to Build Path`
-   1. Right click on `src/test/java` and choose `Build Path` > `Use as Source
-      Folder`
-   1. Right click on `generated-src/antlr/main` and choose `Build Path` > `Use
-      as Source Folder`
+1. In Eclipse click `GhidraDev` > `Import` > `Ghidra Module Source...`, chose
+   the cloned copy of this repository and complete the wizard ensuring that your
+   proper Ghidra installation is selected, and click `Finish`
+1. Perform a debug launch of this project choosing to ignore errors in the
+   project. These errors will go away as the project is built.
 
 # Rust Search Tool
 

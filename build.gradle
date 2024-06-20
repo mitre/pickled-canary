@@ -93,7 +93,7 @@ jacocoTestReport {
 
 generateGrammarSource {
 	arguments += ["-visitor", "-package", "org.mitre.pickledcanary.patterngenerator.generated"]
-	outputDirectory = new File("${project.layout.projectDirectory}/generated-src/antlr/main/org/mitre/pickledcanary/patterngenerator/generated".toString())
+	outputDirectory = new File("${project.buildDir}/generated-src/antlr/main/org/mitre/pickledcanary/patterngenerator/generated".toString())
 }
 
 // Exclude additional files from the built extension
