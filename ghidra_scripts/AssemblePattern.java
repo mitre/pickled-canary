@@ -29,8 +29,8 @@ public class AssemblePattern extends GhidraScript {
 		final String query = Files.readString(patternFile.toPath());
 		println("Processing query: " + query);
 
-		final String pattern = PickledCanary.parseAndAssemble(monitor, currentProgram, currentAddress, query,
-				removeDebug);
+		final String pattern = PickledCanary.compile(monitor, query, currentProgram, currentAddress,
+			removeDebug);
 
 		// write compiled pattern to file
 		if (!monitor.isCancelled()) {
