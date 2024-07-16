@@ -1,3 +1,4 @@
+// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
 
 parser grammar pc_grammar;
 

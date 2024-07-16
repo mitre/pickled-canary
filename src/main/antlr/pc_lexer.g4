@@ -1,3 +1,5 @@
+// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+
 lexer grammar pc_lexer;
 
 SEMICOLON: ';';
