@@ -22,18 +22,12 @@
 
 This repository contains all aspects of Pickled Canary including:
 
-- The Ghidra Plugin - complete with a modified copy of Ghidra's assembler
+- The Ghidra Plugin
 - The Rust search tool - with Python bindings
 - The Pickled Canary syntax highlighting plugin for VS Code
 
 The location and installation instructions for each of these are described in
 their respective sections below.
-
-[Another repository](https://github.com/mitre/ghidra-pickled-canary) exists
-which is a mirror of the Ghidra repo but containing a branch ("pickled-canary")
-with Pickled Canary specific assembler modifications. This Ghidra fork does
-_not_ currently contain all of the code required to run patterns nor the GUI
-components of Pickled Canary; those are found here for now.
 
 # Ghidra Plugin
 
@@ -91,9 +85,6 @@ JSON file for use in the [Rust search tool](#rust-search-tool).
 There are two included Ghidra scripts, both are available in Ghidra's script
 manager:
 
-> **Tip:** For both scripts, be sure your cursor is at a valid instruction
-> address in the binary you want to compile your pattern against
-
 1. `AssemblePattern` - Compiles a pattern for execution in the [Rust search
    tool](#rust-search-tool)
 2. `AssembleAndRunPattern` - Compiles a pattern and executes it within Ghidra,
@@ -117,14 +108,6 @@ If the extension still seems to be installed:
    - Windows: `C:\Users\USERNAME\.ghidra\GHIDRA_VERSION\Extensions\`
    - Linux: `~/.ghidra/GHIDRA_VERSION/Extensions/`
 
-## Known Quirks
-
-- To compile a pattern, be sure your "current address" is pointed at a memory
-  address that is valid for the instructions in your pattern (e.g.: it's byte
-  aligned and a valid code section)
-  - The easiest way to do this is to simply click on an existing assembly
-    instruction in your source binary.
-
 ## Ghidra Development Setup
 
 1. Clone this repository
@@ -133,7 +116,11 @@ If the extension still seems to be installed:
    the cloned copy of this repository and complete the wizard ensuring that your
    proper Ghidra installation is selected, and click `Finish`
 1. Perform a debug launch of this project choosing to ignore errors in the
-   project. These errors will go away as the project is built.
+   project. These errors *should* go away as the project is built.
+   > NOTE: The *should* in the previous sentence does not appear to happen with
+   > Ghidra 11.1+. We are actively working on resolving this issue. For now,
+   > it's possible to edit the files, do a command line `gradle buildExtension`,
+   > and install the built extension to test.
 
 # Rust Search Tool
 
@@ -490,8 +477,7 @@ Negative lookahead blocks prevent a match from being found if the pattern
 elements inside them are found. They can be used to ensure that a value is not
 followed by some other value.
 
-Negative lookahead blocks start with a `` `NOT {` `` and end with a `` `}
-END_NOT` ``
+Negative lookahead blocks start with a `` `NOT {` `` and end with a `` `} END_NOT` ``
 
 Negative lookaheads must not be used at the very start of a pattern.
 
@@ -527,4 +513,4 @@ above. More information regarding this is available upon request.
 
 # Copyright
 
-Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+Copyright (C) 2024 The MITRE Corporation All Rights Reserved
