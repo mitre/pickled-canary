@@ -2,8 +2,6 @@
 
 lexer grammar pc_lexer;
 
-SEMICOLON: ';';
-
 NEWLINE: [ \t]* [\r\n]+;
 
 COMMENT: ' '* ';' ' '? ~[\r\n]*;
