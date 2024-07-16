@@ -112,6 +112,8 @@ jobs:
             GHIDRA_BUILD_DATE: "20240607"
           - GHIDRA_VERSION: "11.1.1"
             GHIDRA_BUILD_DATE: "20240614"
+          - GHIDRA_VERSION: "11.1.2"
+            GHIDRA_BUILD_DATE: "20240709"
     env:
       GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
     steps:
