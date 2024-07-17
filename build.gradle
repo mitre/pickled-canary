@@ -91,9 +91,22 @@ jacocoTestReport {
 	dependsOn test // tests are required to run before generating the report
 }
 
+// Configure ANTLR source code generator plugin
+
+def antlrOut = "${project.layout.projectDirectory}/generated-src/antlr/main/java"
+def antlrPackage = "org.mitre.pickledcanary.patterngenerator.generated"
+
 generateGrammarSource {
-	arguments += ["-visitor", "-package", "org.mitre.pickledcanary.patterngenerator.generated"]
-	outputDirectory = new File("${project.buildDir}/generated-src/antlr/main/org/mitre/pickledcanary/patterngenerator/generated".toString())
+	arguments += ["-visitor", "-package", antlrPackage]
+	outputDirectory = new File("${antlrOut}/${antlrPackage.replace(".", File.separator)}".toString())
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs += antlrOut
+		}
+	}
 }
 
 // Exclude additional files from the built extension

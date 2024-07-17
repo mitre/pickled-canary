@@ -110,17 +110,40 @@ If the extension still seems to be installed:
 
 ## Ghidra Development Setup
 
+Requirements:
+* An existing installation of Ghidra v11.1 or newer
+* JDK 17 or newer
+* Gradle 8.0 or newer
+
+#### Development with Eclipse
+
 1. Clone this repository
+1. If you were previously developing outside of Eclipse, `rm -rf` the `build` directory.
+1. Generate the Antlr derived source code by running: `gradle generateGrammarSource`
 1. Open Eclipse (with Ghidra Dev Tools already installed)
-1. In Eclipse click `GhidraDev` > `Import` > `Ghidra Module Source...`, chose
-   the cloned copy of this repository and complete the wizard ensuring that your
-   proper Ghidra installation is selected, and click `Finish`
-1. Perform a debug launch of this project choosing to ignore errors in the
-   project. These errors *should* go away as the project is built.
-   > NOTE: The *should* in the previous sentence does not appear to happen with
-   > Ghidra 11.1+. We are actively working on resolving this issue. For now,
-   > it's possible to edit the files, do a command line `gradle buildExtension`,
-   > and install the built extension to test.
+1. In Eclipse click `File` > `Open Projects from File System...`, chose the
+   cloned copy of this repository, and click `Finish`
+1. In the Eclipse `Package Explorer`:
+   1. Right click on the newly created project and choose `GhidraDev` > `Link
+      Ghidra...` and choose your Ghidra installation.
+   1. Right click on `lib` > `json-20230618.jar` and choose `Build Path` > `Add
+      to Build Path`
+   1. Right click on `lib` > `antlr4-runtime-4.13.1.jar` and choose 
+      `Build Path` > `Add to Build Path`
+   1. Right click on `src/test/java` and choose `Build Path` > `Use as Source
+      Folder`
+   1. Right click on `generated-src/antlr/main/java` and choose `Build Path` > `Use
+      as Source Folder`
+1. To run the code, click the green run button and select "Ghidra" as the run configuration, then click "OK".
+
+#### Development without Eclipse
+
+1. Clone this repository.
+2. Set the `GHIDRA_INSTALL_DIR` environment variable to the path of the Ghidra installation on your computer.
+3. Import the directory into to your favorite Java IDE as a Gradle project. Make sure to set the `GHIDRA_INSTALL_DIR` environment variable for any run configurations you add.
+4. To build the extension, run the `buildExtension` Gradle task. (i.e. `gradle buildExtension`)
+5. The compiled extension will be created at `dist/ghidra_%VERSION%_PUBLIC_%DATE%_pickled-canary.zip`.
+6. Follow the installation instructions above to install the new extension file.
 
 # Rust Search Tool
 
