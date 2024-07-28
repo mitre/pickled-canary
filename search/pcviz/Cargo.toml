@@ -1,6 +1,6 @@
 [package]
 name = "viz"
-version = "0.0.6"
+version = "0.1.0"
 authors = ["Peter <plucia@mitre.org>"]
 edition = "2018"
 license-file = "LICENSE.txt"
@@ -11,8 +11,8 @@ license-file = "LICENSE.txt"
 treesearchlib = { path = "../treesearchlib" }
 pclib = { path = "../pclib" }
 bitvec = "~1.0"
-petgraph="0.6.0"
-hashbrown = { version = "~0.14", features = ["serde"] }
+petgraph = "0.6.0"
+hashbrown = { version = "0.14.5", features = ["serde"] }
 clap = { version = "4.3.10", features = ["derive"] }
 
 

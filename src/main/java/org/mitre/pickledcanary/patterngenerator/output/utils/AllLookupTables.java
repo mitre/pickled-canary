@@ -3,12 +3,12 @@
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
+import ghidra.asm.wild.WildOperandInfo;
 import org.json.JSONArray;
+import org.mitre.pickledcanary.util.PCBytes;
 
 //@formatter:off
 /**
@@ -48,11 +48,15 @@ public class AllLookupTables {
 	// map from LookupTable hash to its index in the list in E (above)
 	// used to determine table_id field in capture groups
 	private final HashMap<Integer, Integer> lookupTableHashToOutIdx;
+	
+	// final tables list in sorted order
+	private ArrayList<LookupTable> noDupTables;
 
 	public AllLookupTables() {
 		tables = new HashMap<>();
 		bitMaskToLookupTableHash = new HashMap<>();
 		lookupTableHashToOutIdx = new HashMap<>();
+		noDupTables = new ArrayList<>();
 	}
 
 	/**
@@ -74,10 +78,11 @@ public class AllLookupTables {
 	}
 
 	private void populateStuff() {
-		for (String key : tables.keySet()) {
-			bitMaskToLookupTableHash.put(key, tables.get(key).hashCode());
+		for (Map.Entry<String, LookupTable> stringLookupTableEntry : tables.entrySet()) {
+			bitMaskToLookupTableHash.put(stringLookupTableEntry.getKey(), stringLookupTableEntry.getValue().hashCode());
 		}
-		ArrayList<LookupTable> noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
+		noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
+		noDupTables.sort(Comparator.naturalOrder());
 		for (int i = 0; i < noDupTables.size(); i++) {
 			lookupTableHashToOutIdx.put(noDupTables.get(i).hashCode(), i);
 		}
@@ -106,6 +111,7 @@ public class AllLookupTables {
 	 */
 	public JSONArray getJson() {
 		List<LookupTable> tablesOut = this.getPatternTables();
+		
 		JSONArray out = new JSONArray();
 		for (LookupTable t : tablesOut) {
 			out.put(t.getJson());
@@ -118,10 +124,25 @@ public class AllLookupTables {
 	 *
 	 */
 	public List<LookupTable> getPatternTables() {
-		if (bitMaskToLookupTableHash.size() == 0) {
+		if (bitMaskToLookupTableHash.isEmpty()) {
 			this.populateStuff();
 		}
-		ArrayList<LookupTable> noDupTables = new ArrayList<>(new HashSet<>(tables.values()));
-		return new ArrayList<>(noDupTables);
+		return noDupTables;
+	}
+
+	public void addOperand(WildOperandInfo assemblyOperandData, AssemblyPatternBlock assemblyPatternBlock, String tableKey) {
+		// get the current operand
+		String operand = assemblyOperandData.choice().toString();
+
+		AssemblyPatternBlock patternBlock = assemblyOperandData.location();
+
+		// get binary masks and values of operand above
+		List<Integer> masks = PCBytes.integerList(patternBlock.trim().getMaskAll());
+		List<Integer> values = PCBytes.integerList(patternBlock.getMaskedValue(assemblyPatternBlock.getValsAll())
+				.trim()
+				.getValsAll());
+
+		// put mapping of operand to masks and values in table named tableKey
+		this.put(tableKey, operand, masks, values);
 	}
 }

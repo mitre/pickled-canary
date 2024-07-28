@@ -15,7 +15,7 @@ public abstract class Step {
 	protected final StepType stepType;
 	protected final String note;
 
-	public Step(StepType stepType, String note) {
+	protected Step(StepType stepType, String note) {
 		this.stepType = stepType;
 		this.note = note;
 	}
@@ -27,6 +27,10 @@ public abstract class Step {
 		}
 		out.put("type", this.stepType);
 		return out;
+	}
+	
+	public StepType getStepType() {
+		return this.stepType;
 	}
 
 	/**

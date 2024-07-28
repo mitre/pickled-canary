@@ -7,16 +7,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-import org.mitre.pickledcanary.assembler.Assembler;
-
-import ghidra.app.plugin.processors.sleigh.SleighDebugLogger;
-import ghidra.app.plugin.processors.sleigh.SleighDebugLogger.SleighDebugMode;
-import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
-
 public class Utils {
+	private Utils() {}
 
 	/**
 	 * Get key for the tables. Key consists of the instruction's value as a binary
@@ -29,7 +21,8 @@ public class Utils {
 	 */
 	public static String maskToX(String mask, String val) {
 		if (mask.length() != val.length()) {
-			throw new RuntimeException(
+			throw new IllegalArgumentException(
+					"mask and value must be the same length! " +
 					"Mask: " + mask + " Len: " + mask.length() + " Val: " + val + " Len: " + val.length());
 		}
 
@@ -103,10 +96,10 @@ public class Utils {
 		}
 
 		// masks and values shouldn't be empty lists
-		if (masks.size() == 0) {
+		if (masks.isEmpty()) {
 			masks.add(0);
 		}
-		if (vals.size() == 0) {
+		if (vals.isEmpty()) {
 			vals.add(0);
 		}
 
@@ -117,50 +110,50 @@ public class Utils {
 		return outMaskVal;
 	}
 
-	/**
-	 * Use the disassembler to check masks and values of opcode and top-level operands of an instruction.
-	 * Prints result to console.
-	 * 
-	 * @param currentProgram Ghidra program open that uses the same architecture as the instruction to debug
-	 * @param currentAddress the address where the cursor is located in the Ghidra program
-	 * @param assembler assembler that can process the instruction to debug
-	 * @param instructionBytes bytes of the instruction to debug
-	 */
-	public static void assemblerDebug(Program currentProgram, Address currentAddress, Assembler assembler,
-			byte[] instructionBytes) {
-		// write the instruction to where the cursor is
-		try {
-			assembler.patchProgram(instructionBytes, currentAddress);
-		} catch (MemoryAccessException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Could not write assembly instruction to program");
-		}
-
-		Instruction instruction = currentProgram.getListing().getInstructionAt(currentAddress);
-		while (instruction == null) {
-			instruction = currentProgram.getListing().getInstructionAfter(currentAddress);
-			currentAddress = instruction.getAddress();
-			System.out.println("WARNING: Could not process instruction. Moving address to " + currentAddress
-					+ " and trying again.");
-		}
-
-		// used for getting the different parts of the instruction
-		final SleighDebugLogger logger = new SleighDebugLogger(currentProgram, currentAddress, SleighDebugMode.VERBOSE);
-
-		for (int i = -1; i < logger.getNumOperands(); i++) {
-			String asciiRep; // assembly representation
-			if (i == -1) { // get mnemonic
-				asciiRep = instruction.getMnemonicString();
-			} else { // get operand string
-				asciiRep = instruction.getDefaultOperandRepresentation(i);
-			}
-
-			// mask which tells which bits are relevant to mnemonic/operand
-			String maskStr = logger.getFormattedInstructionMask(i);
-			// binary representation of the mnemonic/operand
-			String value = logger.getFormattedMaskedValue(i);
-			System.out.println(maskStr + " " + asciiRep + " Mask");
-			System.out.println(value + " " + asciiRep + " Value");
-		}
-	}
+//	/**
+//	 * Use the disassembler to check masks and values of opcode and top-level operands of an instruction.
+//	 * Prints result to console.
+//	 * 
+//	 * @param currentProgram Ghidra program open that uses the same architecture as the instruction to debug
+//	 * @param currentAddress the address where the cursor is located in the Ghidra program
+//	 * @param assembler assembler that can process the instruction to debug
+//	 * @param instructionBytes bytes of the instruction to debug
+//	 */
+//	public static void assemblerDebug(Program currentProgram, Address currentAddress, Assembler assembler,
+//			byte[] instructionBytes) {
+//		// write the instruction to where the cursor is
+//		try {
+//			assembler.patchProgram(instructionBytes, currentAddress);
+//		} catch (MemoryAccessException e) {
+//			e.printStackTrace();
+//			throw new RuntimeException("Could not write assembly instruction to program");
+//		}
+//
+//		Instruction instruction = currentProgram.getListing().getInstructionAt(currentAddress);
+//		while (instruction == null) {
+//			instruction = currentProgram.getListing().getInstructionAfter(currentAddress);
+//			currentAddress = instruction.getAddress();
+//			System.out.println("WARNING: Could not process instruction. Moving address to " + currentAddress
+//					+ " and trying again.");
+//		}
+//
+//		// used for getting the different parts of the instruction
+//		final SleighDebugLogger logger = new SleighDebugLogger(currentProgram, currentAddress, SleighDebugMode.VERBOSE);
+//
+//		for (int i = -1; i < logger.getNumOperands(); i++) {
+//			String asciiRep; // assembly representation
+//			if (i == -1) { // get mnemonic
+//				asciiRep = instruction.getMnemonicString();
+//			} else { // get operand string
+//				asciiRep = instruction.getDefaultOperandRepresentation(i);
+//			}
+//
+//			// mask which tells which bits are relevant to mnemonic/operand
+//			String maskStr = logger.getFormattedInstructionMask(i);
+//			// binary representation of the mnemonic/operand
+//			String value = logger.getFormattedMaskedValue(i);
+//			System.out.println(maskStr + " " + asciiRep + " Mask");
+//			System.out.println(value + " " + asciiRep + " Value");
+//		}
+//	}
 }

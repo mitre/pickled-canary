@@ -10,18 +10,18 @@ package org.mitre.pickledcanary.patterngenerator.output.steps;
  */
 public class ConcreteOperandField extends ConcreteOperand {
 
-	final private String var_id;
-	final private String name;
+	private final String varId;
+	private final String name;
 
-	public ConcreteOperandField(String var_id, String name) {
+	public ConcreteOperandField(String varId, String name) {
 		super(ConcreteOperand.TypeOfOperand.Field);
-		this.var_id = var_id;
+		this.varId = varId;
 		this.name = name;
 	}
 
 	@Override
 	public String getVarId() {
-		return this.var_id;
+		return this.varId;
 	}
 
 	@Override
@@ -31,7 +31,7 @@ public class ConcreteOperandField extends ConcreteOperand {
 
 	@Override
 	public String toString() {
-		return "{" + this.var_id + "=" + this.name + "}";
+		return "{" + this.varId + "=" + this.name + "}";
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class ConcreteOperandField extends ConcreteOperand {
 		if (!this.name.equals(that.getValue())) {
 			return false;
 		}
-		return this.var_id.equals(that.getVarId());
+		return this.varId.equals(that.getVarId());
 	}
 
 }

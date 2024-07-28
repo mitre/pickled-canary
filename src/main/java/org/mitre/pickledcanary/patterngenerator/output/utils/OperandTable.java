@@ -3,6 +3,8 @@
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -13,7 +15,7 @@ import org.json.JSONObject;
  * A table matching operands to their binary representations. See C in JavaDoc
  * in {@link AllLookupTables}.
  */
-public class OperandTable {
+public class OperandTable implements Comparable<OperandTable> {
 
 	// The binary representations (along with masks) for the operand of this table
 	private final HashSet<OperandRepresentation> reps;
@@ -100,5 +102,26 @@ public class OperandTable {
 			out.append("\n\t").append(x.toString());
 		}
 		return out.toString();
+	}
+
+	public int compareTo(OperandTable other) {
+		var out = Integer.compare(reps.size(), other.reps.size());
+		if (out != 0) {
+			return out;
+		}
+
+		var sorted = new ArrayList<>(reps);
+		Collections.sort(sorted);
+
+		var oSorted = new ArrayList<>(other.reps);
+		Collections.sort(oSorted);
+
+		for (var i = 0; i < sorted.size(); i++) {
+			out = sorted.get(i).compareTo(oSorted.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+		return 0;
 	}
 }

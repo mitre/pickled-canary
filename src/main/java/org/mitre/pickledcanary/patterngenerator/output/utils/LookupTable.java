@@ -3,6 +3,8 @@
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ import org.json.JSONObject;
  * A lookup table for matching operands to their binary representations. See B
  * in JavaDoc in {@link AllLookupTables}.
  */
-public class LookupTable {
+public class LookupTable implements Comparable<LookupTable>{
 
 	// the table - map from operand to the OperandTable
 	private final HashMap<String, OperandTable> operandTables;
@@ -56,8 +58,8 @@ public class LookupTable {
 	 */
 	public JSONObject getJson() {
 		JSONObject out = new JSONObject();
-		for (String operand : operandTables.keySet()) {
-			out.put(operand, operandTables.get(operand).getJson());
+		for (Map.Entry<String, OperandTable> stringOperandTableEntry : operandTables.entrySet()) {
+			out.put(stringOperandTableEntry.getKey(), stringOperandTableEntry.getValue().getJson());
 		}
 		return out;
 	}
@@ -103,5 +105,32 @@ public class LookupTable {
 			out.append("\n\t").append(entry.getKey()).append("=").append(entry.getValue().toString());
 		}
 		return out.toString();
+	}
+
+	@Override
+	public int compareTo(LookupTable o) {
+		var out = Integer.compare(operandTables.size(), o.operandTables.size());
+		if (out != 0) {
+			return out;
+		}
+
+		var keys = new ArrayList<String>(operandTables.keySet());
+		Collections.sort(keys);
+		var oKeys = new ArrayList<String>(o.operandTables.keySet());
+		Collections.sort(oKeys);
+		for (var i = 0; i < keys.size(); i++) {
+			out = keys.get(i).compareTo(oKeys.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+
+		for (String key : keys) {
+			out = this.operandTables.get(key).compareTo(o.operandTables.get(key));
+			if (out != 0) {
+				return out;
+			}
+		}
+		return 0;
 	}
 }

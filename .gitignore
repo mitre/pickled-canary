@@ -11,8 +11,10 @@ bin
 /build/
 search/pickled_canary/pickled_canary_lib.cpython-38-x86_64-linux-gnu.so
 /dist
+generated-src/
+.idea/
 
-
+*.cpython-312-darwin.so
 
 ### Windows ###
 # Windows thumbnail cache files
@@ -43,3 +45,5 @@ Icon
 
 # Thumbnails
 ._*
+.DS_STORE
+/foobartest/

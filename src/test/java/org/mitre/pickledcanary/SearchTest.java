@@ -1,11 +1,10 @@
-
 // Copyright (C) 2023 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.data.Pointer32DataType;
+import ghidra.program.model.mem.Memory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,9 +15,8 @@ import org.mitre.pickledcanary.search.Pattern;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 import org.mitre.pickledcanary.search.VmSearch;
 
-import ghidra.program.database.ProgramBuilder;
-import ghidra.program.model.data.Pointer32DataType;
-import ghidra.program.model.mem.Memory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SearchTest extends PickledCanaryTest {
 
@@ -55,9 +53,10 @@ public class SearchTest extends PickledCanaryTest {
 		List<SavedDataAddresses> result = vm.runAll(monitor);
 		if (result.size() == 0) {
 			System.out.println("No match");
-		} else {
+		}
+		else {
 			System.out.println("Match!");
-			System.out.println(result.toString());
+			System.out.println(result);
 		}
 		Assert.assertEquals(3, result.size());
 		Assert.assertEquals(memory.getMinAddress().add(1), result.get(0).getStart());
@@ -84,7 +83,7 @@ public class SearchTest extends PickledCanaryTest {
 				program.getMemory().getMinAddress(), patternIn);
 		Assert.assertEquals(this.program.getMinAddress(), results.get(0).getStart());
 		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
-		Assert.assertEquals("r3", results.get(0).variables.get("Q1").getValue());
+		Assert.assertEquals("r3", results.get(0).variables().get("Q1").getValue());
 	}
 
 	@Test
@@ -94,7 +93,8 @@ public class SearchTest extends PickledCanaryTest {
 				this.program.getMinAddress(), patternIn);
 		Assert.assertEquals(this.program.getMinAddress().add(2), results.get(0).getStart());
 		Assert.assertEquals(this.program.getMinAddress().add(4), results.get(0).getEnd());
-		Assert.assertEquals(this.program.getMinAddress().add(3), results.get(0).labels.get("foo"));
+		Assert.assertEquals(this.program.getMinAddress().add(3),
+				results.get(0).labels().get("foo"));
 	}
 
 }

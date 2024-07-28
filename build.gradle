@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *	  http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,20 @@
 // An absolute path to the Ghidra installation directory must be supplied either by setting the 
 // GHIDRA_INSTALL_DIR environment variable or Gradle project property:
 //
-//     > export GHIDRA_INSTALL_DIR=<Absolute path to Ghidra> 
-//     > gradle
+//	 > export GHIDRA_INSTALL_DIR=<Absolute path to Ghidra> 
+//	 > gradle
 //
-//         or
+//		 or
 //
-//     > gradle -PGHIDRA_INSTALL_DIR=<Absolute path to Ghidra>
+//	 > gradle -PGHIDRA_INSTALL_DIR=<Absolute path to Ghidra>
 //
 // Gradle should be invoked from the directory of the project to build.  Please see the
 // application.gradle.version property in <GHIDRA_INSTALL_DIR>/Ghidra/application.properties
 // for the correction version of Gradle to use for the Ghidra installation you specify.
 plugins {
-    id("java")
-    id("jacoco")
+	id("java")
+	id("jacoco")
+	id("antlr")
 }
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir
@@ -69,26 +70,44 @@ dependencies {
 	// this extension is built.
 	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.0.3'
 	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.3'
-	testCompileOnly 'junit:junit:4.12' 
+	testCompileOnly 'junit:junit:4.13.1'
 	testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.8.1'
 	testImplementation 'org.jacoco:org.jacoco.agent:0.8.9'
-    testImplementation 'org.jacoco:org.jacoco.ant:0.8.9'
+	testImplementation 'org.jacoco:org.jacoco.ant:0.8.9'
 
+	antlr "org.antlr:antlr4:4.13.1"
 }
 
 jacoco {
-    toolVersion = "0.8.9"
+	toolVersion = "0.8.9"
 }
 
 jacocoTestReport {
-    reports {
-        html.required = true
-        xml.required = true
-        csv.required = true
-    }
-    dependsOn test // tests are required to run before generating the report
+	reports {
+		html.required = true
+		xml.required = true
+		csv.required = true
+	}
+	dependsOn test // tests are required to run before generating the report
 }
 
+// Configure ANTLR source code generator plugin
+
+def antlrOut = "${project.layout.projectDirectory}/generated-src/antlr/main/java"
+def antlrPackage = "org.mitre.pickledcanary.patterngenerator.generated"
+
+generateGrammarSource {
+	arguments += ["-visitor", "-package", antlrPackage]
+	outputDirectory = new File("${antlrOut}/${antlrPackage.replace(".", File.separator)}".toString())
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs += antlrOut
+		}
+	}
+}
 
 // Exclude additional files from the built extension
 // Ex: buildExtension.exclude '.idea/**'

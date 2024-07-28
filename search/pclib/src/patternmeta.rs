@@ -70,7 +70,7 @@ impl<Endian: BitOrder + Clone + std::fmt::Debug + PartialEq> PatternMeta<Endian>
     pub fn combine_patterns(&mut self) {
         let mut mega_pattern = BitPattern::get_dot_star();
         mega_pattern.append(&BitPattern::get_save_start());
-        let mut combined_patterns = self.patterns.get(0).unwrap().clone();
+        let mut combined_patterns = self.patterns.first().unwrap().clone();
         combined_patterns.combine_multiple(&self.patterns[1..]);
         mega_pattern.append(&combined_patterns);
 
@@ -476,12 +476,12 @@ pub mod tests {
 
         let one = results.get("one").unwrap();
         assert_eq!(one.len(), 1);
-        assert!(one.get(0).unwrap().matched);
+        assert!(one.first().unwrap().matched);
         let one = results.get("two").unwrap();
         assert_eq!(one.len(), 1);
-        assert!(one.get(0).unwrap().matched);
+        assert!(one.first().unwrap().matched);
         let one = results.get("three").unwrap();
         assert_eq!(one.len(), 1);
-        assert!(one.get(0).unwrap().matched);
+        assert!(one.first().unwrap().matched);
     }
 }

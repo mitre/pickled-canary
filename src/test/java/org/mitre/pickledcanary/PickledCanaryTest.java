@@ -108,8 +108,8 @@ public abstract class PickledCanaryTest extends AbstractGhidraHeadlessIntegratio
 	void generatePatternTestHelper(String patternIn, List<String> compiledPattern, boolean removeDebugInfo,
 			Address address) {
 		String actuallyCompiledPattern = "";
-		actuallyCompiledPattern = PickledCanary.parseAndAssemble(monitor, this.program, address, patternIn,
-				removeDebugInfo);
+		actuallyCompiledPattern = PickledCanary.compile(monitor, patternIn, this.program, address,
+			removeDebugInfo);
 
 		boolean result = false;
 		for (String target : compiledPattern) {

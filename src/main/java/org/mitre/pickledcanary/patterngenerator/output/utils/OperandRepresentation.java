@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.json.JSONArray;
 
-public class OperandRepresentation {
+public class OperandRepresentation implements Comparable<OperandRepresentation> {
 
 	private final List<Integer> mask;
 	private final List<Integer> value;
@@ -88,5 +88,27 @@ public class OperandRepresentation {
 
 	public String toString() {
 		return "{M:" + this.mask.toString() + ", V:" + this.value.toString() + "}";
+	}
+
+	@Override
+	public int compareTo(OperandRepresentation o) {
+		var out = Integer.compare(this.mask.size(), o.mask.size());
+		if (out != 0) {
+			return out;
+		}
+
+		for (var i = 0; i < this.mask.size(); i++) {
+			out = this.mask.get(i).compareTo(o.mask.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+		for (var i = 0; i < this.value.size(); i++) {
+			out = this.value.get(i).compareTo(o.value.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+		return 0;
 	}
 }

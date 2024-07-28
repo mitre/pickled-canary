@@ -11,18 +11,18 @@ import org.mitre.pickledcanary.patterngenerator.output.utils.BitArray;
  */
 public class ConcreteOperandScalar extends ConcreteOperand {
 
-	final private String var_id;
-	final private BitArray value;
+	private final String varId;
+	private final BitArray value;
 
-	public ConcreteOperandScalar(String var_id, BitArray value) {
+	public ConcreteOperandScalar(String varId, BitArray value) {
 		super(ConcreteOperand.TypeOfOperand.Scalar);
-		this.var_id = var_id;
+		this.varId = varId;
 		this.value = value;
 	}
 
 	@Override
 	public String getVarId() {
-		return this.var_id;
+		return this.varId;
 	}
 
 	@Override
@@ -44,7 +44,7 @@ public class ConcreteOperandScalar extends ConcreteOperand {
 
 	@Override
 	public String toString() {
-		return "{" + this.var_id + "=" + this.value.toString() + "}";
+		return "{" + this.varId + "=" + this.value.toString() + "}";
 	}
 
 	@Override
@@ -56,6 +56,6 @@ public class ConcreteOperandScalar extends ConcreteOperand {
 		if (!this.value.equals(that.getValuePCBitArray())) {
 			return false;
 		}
-		return this.var_id.equals(that.getVarId());
+		return this.varId.equals(that.getVarId());
 	}
 }

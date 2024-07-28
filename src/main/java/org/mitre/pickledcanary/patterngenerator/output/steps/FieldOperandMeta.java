@@ -4,6 +4,7 @@
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.json.JSONObject;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
@@ -19,10 +20,9 @@ public class FieldOperandMeta extends OperandMeta {
 	 * @param mask      Mask of a specific operand
 	 * @param tableKey  temporary table key
 	 * @param varId     variable ID (Q1) of operand
-	 * @param operandId the index of the operand in the instruction
 	 */
-	public FieldOperandMeta(List<Integer> mask, String tableKey, String varId, int operandId) {
-		super(TypeOfOperand.Field, mask, varId, operandId);
+	public FieldOperandMeta(List<Integer> mask, String tableKey, String varId) {
+		super(TypeOfOperand.Field, mask, varId);
 		this.tableKey = tableKey;
 	}
 
@@ -44,7 +44,7 @@ public class FieldOperandMeta extends OperandMeta {
 
 	public int getResolvedTableKey() {
 		if (resolvedTableKey == -1) {
-			throw new RuntimeException("Table Key not yet resolved!");
+			throw new NoSuchElementException("Table Key not yet resolved!");
 		}
 		return this.resolvedTableKey;
 	}

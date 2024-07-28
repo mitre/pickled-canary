@@ -30,11 +30,21 @@ import ghidra.app.plugin.processors.sleigh.expression.XorExpression;
 import ghidra.app.plugin.processors.sleigh.symbol.OperandSymbol;
 import ghidra.app.plugin.processors.sleigh.symbol.TripleSymbol;
 import ghidra.program.model.mem.MemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 /**
  * Represents a scalar operand choice for a wildcard in the output json.
  */
 public class ScalarOperandMeta extends OperandMeta {
+	
+	public static final String JSON_KEY_OP = "op";
+	public static final String JSON_KEY_VALUE = "value";
+	public static final String JSON_KEY_LEFT = "left";
+	public static final String JSON_KEY_RIGHT = "right";
+	public static final String JSON_KEY_CHILD = "child";
+	public static final String JSON_KEY_CHILDREN = "children";
+	private static final String JSON_KEY_OFFSET = "offset";
 
 	final PatternExpression expression;
 
@@ -43,10 +53,9 @@ public class ScalarOperandMeta extends OperandMeta {
 	 * 
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
-	 * @param operandId the index of the operand in the instruction
 	 */
-	public ScalarOperandMeta(List<Integer> mask, String varId, int operandId, PatternExpression expression) {
-		super(TypeOfOperand.Scalar, mask, varId, operandId);
+	public ScalarOperandMeta(List<Integer> mask, String varId, PatternExpression expression) {
+		super(TypeOfOperand.Scalar, mask, varId);
 		this.expression = expression;
 	}
 
@@ -67,111 +76,104 @@ public class ScalarOperandMeta extends OperandMeta {
 	}
 
 	protected static JSONObject expressionToJson(PatternExpression expression) {
+		if (expression instanceof BinaryExpression binaryExpression) {
+			return binaryExpressionToJson(binaryExpression);
+		} else if (expression instanceof UnaryExpression unaryExpression) {
+			return unaryExpressionToJson(unaryExpression);
+		} else if (expression instanceof StartInstructionValue) {
+			return startInstructionValueToJson();
+		} else if (expression instanceof ConstantValue constantValue) {
+			return constantValueToJson(constantValue);
+		} else if (expression instanceof OperandValue operandValue) {
+			return operandValueToJson(operandValue);
+		} else if (expression instanceof TokenField tokenField) {
+			return tokenFieldToJson(tokenField);
+		} else if (expression instanceof ContextField contextField) {
+			return contextFieldToJson(contextField);
+		} else if (expression instanceof EndInstructionValue) {
+			return endInstructionValueToJson();
+		} else {
+			throw new UnsupportedExpressionException(expression);
+		}
+	}
+
+	private static JSONObject endInstructionValueToJson() {
+		JSONObject out = new JSONObject();
+		out.put("op", "EndInstructionValue");
+		return out;
+	}
+
+	protected static JSONObject contextFieldToJson(ContextField tf) {
 		JSONObject out = new JSONObject();
 
-		if (expression instanceof BinaryExpression) {
-			JSONObject children = new JSONObject();
-			children.put("left", expressionToJson(((BinaryExpression) expression).getLeft()));
-			children.put("right", expressionToJson(((BinaryExpression) expression).getRight()));
-			out.put("children", children);
+		JSONObject tfOut = new JSONObject();
+		//	not adding bigEndian to contextField ops anymore
+		tfOut.put("signbit", tf.hasSignbit());
+		tfOut.put("bitstart", tf.getStartBit());
+		tfOut.put("bitend", tf.getEndBit());
+		tfOut.put("bytestart", tf.getByteStart());
+		tfOut.put("byteend", tf.getByteEnd());
+		tfOut.put("shift", tf.getShift());
 
-			if (expression instanceof PlusExpression) {
-				out.put("op", "Add");
-			} else if (expression instanceof SubExpression) {
-				out.put("op", "Sub");
-			} else if (expression instanceof MultExpression) {
-				out.put("op", "Mult");
-			} else if (expression instanceof LeftShiftExpression) {
-				out.put("op", "LeftShift");
-			} else if (expression instanceof RightShiftExpression) {
-				out.put("op", "RightShift");
-			} else if (expression instanceof AndExpression) {
-				out.put("op", "And");
-			} else if (expression instanceof OrExpression) {
-				out.put("op", "Or");
-			} else if (expression instanceof XorExpression) {
-				out.put("op", "Xor");
-			} else if (expression instanceof DivExpression) {
-				out.put("op", "Div");
-			} else {
-				throw new RuntimeException("Unsupported BinaryExpression type encountered");
-			}
-		} else if (expression instanceof UnaryExpression) {
-			out.put("child", expressionToJson(((UnaryExpression) expression).getUnary()));
+		out.put(JSON_KEY_OP, "ContextField");
+		out.put(JSON_KEY_VALUE, tfOut);
+		return out;
+	}
 
-			if (expression instanceof MinusExpression) {
-				out.put("op", "Minus");
-			} else if (expression instanceof NotExpression) {
-				out.put("op", "Not");
-			} else {
-				throw new RuntimeException("Unsupported UnaryExpression type encountered");
-			}
-		} else if (expression instanceof StartInstructionValue) {
-			out.put("op", "StartInstructionValue");
-		} else if (expression instanceof ConstantValue) {
+	protected static JSONObject tokenFieldToJson(TokenField tf) {
+		JSONObject out = new JSONObject();
 
-			out.put("op", "ConstantValue");
-			try {
-				out.put("value", expression.getValue(null));
-			} catch (MemoryAccessException e) {
-				// This should never happen
-				throw new RuntimeException("Invalid memory access");
-			}
-		} else if (expression instanceof OperandValue) {
-			OperandValue ov = (OperandValue) expression;
-			OperandSymbol sym = ov.getConstructor().getOperand(ov.getIndex());
-			PatternExpression patexp = getPatExp(sym);
+		JSONObject tfOut = new JSONObject();
+		tfOut.put("bigendian", tf.isBigEndian());
+		tfOut.put("signbit", tf.hasSignbit());
+		tfOut.put("bitstart", tf.getBitStart());
+		tfOut.put("bitend", tf.getBitEnd());
+		tfOut.put("bytestart", tf.getByteStart());
+		tfOut.put("byteend", tf.getByteEnd());
+		tfOut.put("shift", tf.getShift());
 
-			if (patexp == null) {
-				out.put("op", "ConstantValue");
-				out.put("value", 0);
-			} else {
+		out.put(JSON_KEY_OP, "TokenField");
+		out.put(JSON_KEY_VALUE, tfOut);
+		return out;
+	}
 
-				int i = sym.getOffsetBase();
-				int offset = 0;
-				if (i < 0)
-					offset = sym.getRelativeOffset();
+	protected static JSONObject operandValueToJson(OperandValue ov) {
+		JSONObject out = new JSONObject();
+		OperandSymbol sym = ov.getConstructor().getOperand(ov.getIndex());
+		PatternExpression patexp = getPatExp(sym);
 
-				out.put("op", "OperandValue");
-				out.put("offset", offset);
-				out.put("child", expressionToJson(patexp));
-			}
-		} else if (expression instanceof TokenField) {
-			TokenField tf = (TokenField) expression;
-
-			JSONObject tf_out = new JSONObject();
-			tf_out.put("bigendian", tf.isBigEndian());
-			tf_out.put("signbit", tf.hasSignbit());
-			tf_out.put("bitstart", tf.getBitStart());
-			tf_out.put("bitend", tf.getBitEnd());
-			tf_out.put("bytestart", tf.getByteStart());
-			tf_out.put("byteend", tf.getByteEnd());
-			tf_out.put("shift", tf.getShift());
-
-			out.put("op", "TokenField");
-			out.put("value", tf_out);
-
-		} else if (expression instanceof ContextField) {
-			ContextField tf = (ContextField) expression;
-
-			JSONObject tf_out = new JSONObject();
-//			tf_out.put("bigendian", tf..isBigEndian());
-			tf_out.put("signbit", tf.hasSignbit());
-			tf_out.put("bitstart", tf.getStartBit());
-			tf_out.put("bitend", tf.getEndBit());
-			tf_out.put("bytestart", tf.getByteStart());
-			tf_out.put("byteend", tf.getByteEnd());
-			tf_out.put("shift", tf.getShift());
-
-			out.put("op", "ContextField");
-			out.put("value", tf_out);
-
-		} else if (expression instanceof EndInstructionValue) {
-			out.put("op", "EndInstructionValue");
+		if (patexp == null) {
+			out.put(JSON_KEY_OP, "ConstantValue");
+			out.put(JSON_KEY_VALUE, 0);
 		} else {
-			throw new RuntimeException("Unsupported Expression type encountered");
+			int i = sym.getOffsetBase();
+			int offset = 0;
+			if (i < 0)
+				offset = sym.getRelativeOffset();
+
+			out.put(JSON_KEY_OP, "OperandValue");
+			out.put(JSON_KEY_OFFSET, offset);
+			out.put(JSON_KEY_CHILD, expressionToJson(patexp));
 		}
 
+		return out;
+	}
+
+	protected static JSONObject constantValueToJson(ConstantValue constantValue) {
+		JSONObject out = new JSONObject();
+		out.put(JSON_KEY_OP, "ConstantValue");
+		try {
+			out.put(JSON_KEY_VALUE, constantValue.getValue(null));
+		} catch (MemoryAccessException e) {
+			// This should never happen
+			throw new ExpressionMemoryAccessException(constantValue, e);
+		}
+		return out;
+	}
+
+	protected static JSONObject startInstructionValueToJson() {
+		JSONObject out = new JSONObject();
+		out.put(JSON_KEY_OP, "StartInstructionValue");
 		return out;
 	}
 
@@ -180,6 +182,54 @@ public class ScalarOperandMeta extends OperandMeta {
 		JSONObject out = super.getJson();
 
 		out.put("expression", expressionToJson(this.expression));
+		return out;
+	}
+	
+	protected static JSONObject binaryExpressionToJson(BinaryExpression binary) {
+		JSONObject out = new JSONObject();
+		
+		JSONObject children = new JSONObject();
+		children.put(JSON_KEY_LEFT, expressionToJson(binary.getLeft()));
+		children.put(JSON_KEY_RIGHT, expressionToJson(binary.getRight()));
+		out.put(JSON_KEY_CHILDREN, children);
+
+		if (binary instanceof PlusExpression) {
+			out.put(JSON_KEY_OP, "Add");
+		} else if (binary instanceof SubExpression) {
+			out.put(JSON_KEY_OP, "Sub");
+		} else if (binary instanceof MultExpression) {
+			out.put(JSON_KEY_OP, "Mult");
+		} else if (binary instanceof LeftShiftExpression) {
+			out.put(JSON_KEY_OP, "LeftShift");
+		} else if (binary instanceof RightShiftExpression) {
+			out.put(JSON_KEY_OP, "RightShift");
+		} else if (binary instanceof AndExpression) {
+			out.put(JSON_KEY_OP, "And");
+		} else if (binary instanceof OrExpression) {
+			out.put(JSON_KEY_OP, "Or");
+		} else if (binary instanceof XorExpression) {
+			out.put(JSON_KEY_OP, "Xor");
+		} else if (binary instanceof DivExpression) {
+			out.put(JSON_KEY_OP, "Div");
+		} else {
+			throw new UnsupportedExpressionException(binary);
+		}
+		
+		return out;
+	}
+
+	protected static JSONObject unaryExpressionToJson(UnaryExpression unary) {
+		JSONObject out = new JSONObject();
+		out.put(JSON_KEY_CHILD, expressionToJson(unary.getUnary()));
+
+		if (unary instanceof MinusExpression) {
+			out.put(JSON_KEY_OP, "Minus");
+		} else if (unary instanceof NotExpression) {
+			out.put(JSON_KEY_OP, "Not");
+		} else {
+			throw new UnsupportedExpressionException(unary);
+		}
+
 		return out;
 	}
 }

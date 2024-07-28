@@ -76,7 +76,7 @@ pub unsafe extern "cdecl" fn iterate_results(c_results: *mut ResultsIterator) ->
     let ri: &mut ResultsIterator = unsafe { &mut *c_results };
 
     match ri.get_next_offset_from_results() {
-        Some(x) => i64::try_from(x).unwrap_or(-1),
+        Some(x) => i64::from(x),
         None => -1,
     }
 }
