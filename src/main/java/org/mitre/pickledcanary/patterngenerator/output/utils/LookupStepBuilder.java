@@ -85,7 +85,7 @@ public class LookupStepBuilder {
 			}
 
 			// get key of table
-			String tableKey = noWildcardMask + "_0";
+			String tableKey = noWildcardMask + "_" + assemblyOperandData.wildcard();
 
 			// It's not a scalar operand
 			if (assemblyOperandData.choice() != null) {
