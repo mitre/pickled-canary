@@ -15,7 +15,7 @@ import java.util.List;
 public class PikevmStates {
 
 	private final List<Deque<PikevmThread>> inner;
-	private final int startIdx;
+	private int startIdx;
 
 	public PikevmStates() {
 		this.inner = new ArrayList<>();
@@ -45,7 +45,15 @@ public class PikevmStates {
 		if (spIndex >= this.inner.size()) {
 			return null;
 		}
-		return this.inner.get(spIndex).pollLast();
+		
+		PikevmThread out = this.inner.get(spIndex).pollLast();
+		
+		if (spIndex > 0) {
+			this.inner.remove(0);
+			this.startIdx += 1;
+		}
+		
+		return out;
 	}
 
 	// TODO: implement cleanup of old lists (e.g. remove them and increment

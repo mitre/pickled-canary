@@ -174,12 +174,9 @@ public record LookupData(
 
 	private BitArray readToBitArray(MemBuffer input, int sp, int len) {
 		byte[] bytes = new byte[len];
-		for (int i = 0; i < len; i++) {
-			try {
-				bytes[i] = input.getByte(sp + i);
-			} catch (MemoryAccessException e) {
-				return null;
-			}
+		int len_read = input.getBytes(bytes, sp);
+		if (len_read < len) {
+			return null;
 		}
 		return new BitArray(bytes);
 	}
