@@ -65,6 +65,10 @@ public class PickledCanarySearcher {
 	}
 
 	public void search(Accumulator<SavedDataAddresses> accumulator, TaskMonitor monitor) {
+		// Don't try to search if a zero-length pattern given
+		if (query.length() == 0) {
+			return;
+		}
 
 		// Set our message to say that we're compiling... and tell everyone who cares
 		this.compiledPattern = PickledCanarySearcher.COMPILING_PATTERN;
