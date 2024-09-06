@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -49,9 +49,7 @@ public class LookupStep extends StepBranchless {
 	 */
 	public void resolveTableIds(AllLookupTables tables) {
 		for (Data d : data.values()) {
-			if (d instanceof LookupData lookupData) {
-				lookupData.resolveTableIds(tables);
-			}
+			d.resolveTableIds(tables);
 		}
 	}
 
@@ -72,27 +70,25 @@ public class LookupStep extends StepBranchless {
 	}
 
 	/**
-	 * Loop over all our internal data doing a lookup on each and return the
-	 * combined results
+	 * Loop over all our internal data doing a lookup on each and return the combined results
 	 * 
 	 * @param input
 	 * @param sp
 	 * @param tables
-	 * @param existing Existing SavedData to check lookups against. If new variables
-	 *                 conflict against these, the result will not be included in
-	 *                 the return value.
+	 * @param existing
+	 *            Existing SavedData to check lookups against. If new variables conflict against
+	 *            these, the result will not be included in the return value.
 	 * @return
 	 */
-	public List<LookupAndCheckResult> doLookup(MemBuffer input, int sp, List<LookupTable> tables, SavedData existing) {
+	public List<LookupAndCheckResult> doLookup(MemBuffer input, int sp, List<LookupTable> tables,
+			SavedData existing) {
 
 		List<LookupAndCheckResult> out = new ArrayList<>(this.data.size());
 
 		for (Data d : this.getAllData()) {
-			if (d instanceof LookupData lookupData) {
-				LookupAndCheckResult result = lookupData.doLookupAndCheck(input, sp, tables, existing);
-				if (result != null) {
-					out.add(result);
-				}
+			LookupAndCheckResult result = d.doLookupAndCheck(input, sp, tables, existing);
+			if (result != null) {
+				out.add(result);
 			}
 		}
 		return out;
@@ -101,7 +97,7 @@ public class LookupStep extends StepBranchless {
 	public String toString() {
 		return "LookupStep(data: " + this.data.toString() + ")";
 	}
-	
+
 	public boolean isEmpty() {
 		return this.data.isEmpty();
 	}

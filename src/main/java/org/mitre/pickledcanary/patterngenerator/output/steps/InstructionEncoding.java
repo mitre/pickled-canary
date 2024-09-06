@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -11,13 +11,13 @@ import org.json.JSONObject;
 import org.mitre.pickledcanary.patterngenerator.output.steps.OperandMeta.TypeOfOperand;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
 
-public class InstructionEncoding {
+public class InstructionEncoding implements Comparable<InstructionEncoding> {
 
-	private final List<Integer> value; // value of encoding after applying opcode mask
+	private final ByteArrayWrapper value; // value of encoding after applying opcode mask
 	private final List<OperandMeta> operands; // list of operands
 
-	public InstructionEncoding(List<Integer> value) {
-		this.value = value;
+	public InstructionEncoding(byte[] value) {
+		this.value = new ByteArrayWrapper(value);
 		this.operands = new ArrayList<>();
 	}
 
@@ -71,7 +71,7 @@ public class InstructionEncoding {
 		return out;
 	}
 
-	public List<Integer> getValue() {
+	public ByteArrayWrapper getValue() {
 		return this.value;
 	}
 
@@ -81,5 +81,20 @@ public class InstructionEncoding {
 
 	public String toString() {
 		return "InstructionEncoding(value: " + this.value.toString() + ", operands: " + this.operands.toString() + ")";
+	}
+	
+	@Override
+	public int compareTo(InstructionEncoding a) {
+		int out = this.value.compareTo(a.value);
+		if (out != 0) {
+			return out;
+		} 
+		
+		out = this.operands.size() - a.operands.size();
+		if (out != 0) {
+			return out;
+		}
+		
+		return out;
 	}
 }

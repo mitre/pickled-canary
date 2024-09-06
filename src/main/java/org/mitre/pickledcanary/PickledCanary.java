@@ -7,16 +7,7 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.antlr.v4.runtime.BaseErrorListener;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-
 import org.mitre.pickledcanary.patterngenerator.PCVisitor;
-import org.mitre.pickledcanary.patterngenerator.QueryParseException;
-import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
-import org.mitre.pickledcanary.patterngenerator.generated.pc_lexer;
 import org.mitre.pickledcanary.search.Pattern;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 import org.mitre.pickledcanary.search.VmSearch;
@@ -34,20 +25,15 @@ import ghidra.util.task.TaskMonitor;
 /**
  * This Class holds high-level static methods that are useful for parsing and/or searching pickled
  * canary patterns.
+ * <p>
+ * A disadvantage of using these methods is they will recreate the {@link PCVisitor} each time they
+ * are called, which can be time consuming; instead create your own {@link PCVisitor} and call
+ * {@link PCVisitor.lexParseAndVisit} with a {@link PCVisitor.reset} call in between uses.
  */
 public class PickledCanary {
 
 	public static final boolean DEBUG = true;
 
-	static class MyErrorListener extends BaseErrorListener {
-		@Override
-		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
-				int charPositionInLine,
-				String msg, RecognitionException e) {
-			throw new QueryParseException(msg, line, charPositionInLine);
-		}
-	}
-	
 	/**
 	 * Creates and runs the PC lexer and visitor across a given string pattern. The result can be
 	 * used to generate a JSON or {@link Pattern} output.
@@ -69,33 +55,19 @@ public class PickledCanary {
 	public static PCVisitor createAndRunVisitor(TaskMonitor monitor, String pattern,
 			final Program currentProgram, final Address currentAddress) {
 
-		monitor.setIndeterminate(true);
-		
-		MyErrorListener errorListener = new MyErrorListener();
-
-		var chars = CharStreams.fromString(pattern);
-		var lexer = new pc_lexer(chars);
-		lexer.addErrorListener(errorListener);
-		var commonTokenStream = new CommonTokenStream(lexer);
-		var parser = new pc_grammar(commonTokenStream);
-		parser.addErrorListener(errorListener);
-
-		var progContext = parser.prog();
-
 		var visitor = new PCVisitor(currentProgram, currentAddress, monitor);
-		visitor.visit(progContext);
-
-		monitor.setIndeterminate(false);
+		visitor.lexParseAndVisit(pattern, monitor);
 		return visitor;
 	}
-	
 
 	/**
 	 * Returns a JSON string of the compiled pattern.
 	 */
 	public static String compile(TaskMonitor monitor, String pattern, Program program,
 			Address address, boolean removeDebugInfo) {
-		return createAndRunVisitor(monitor, pattern, program, address).getJSONObject(!removeDebugInfo).toString();
+		return createAndRunVisitor(monitor, pattern, program, address)
+				.getJSONObject(!removeDebugInfo)
+				.toString();
 	}
 
 	public static Pattern compile(TaskMonitor monitor, String pattern, Program program,

@@ -11,12 +11,19 @@ import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
+
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.mitre.pickledcanary.PickledCanary;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammar;
 import org.mitre.pickledcanary.patterngenerator.generated.pc_grammarBaseVisitor;
+import org.mitre.pickledcanary.patterngenerator.generated.pc_lexer;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Byte;
 import org.mitre.pickledcanary.patterngenerator.output.steps.*;
 import org.mitre.pickledcanary.patterngenerator.output.utils.AllLookupTables;
@@ -28,9 +35,9 @@ import java.util.*;
 public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 	private final Program currentProgram;
-	private final Address currentAddress;
+	private Address currentAddress;
 	private final WildSleighAssembler assembler;
-	private final TaskMonitor monitor;
+	private TaskMonitor monitor;
 
 	private final List<OrMultiState> orStates;
 
@@ -38,9 +45,17 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	private final Deque<PatternContext> contextStack;
 	private PatternContext currentContext;
 	private JSONObject metadata;
+	private final MyErrorListener errorListener;
 
 	/**
 	 * Construct visitor to build Step output.
+	 * 
+	 * You likely want to call {@link #lexParseAndVisit(String, TaskMonitor)} once you've created an
+	 * instance of this class. After that, {@link #getJSONObject(boolean)} or {@link #getPattern()}
+	 * can be used to get the pattern output for export or searching respectively
+	 * 
+	 * This visitor can be reused for multiple patterns IF the reset method is called between calls
+	 * to {@link #lexParseAndVisit(String, TaskMonitor)}.
 	 *
 	 * @param currentProgram
 	 * @param currentAddress
@@ -62,6 +77,18 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		this.contextStack = new ArrayDeque<>();
 
 		this.metadata = new JSONObject();
+		errorListener = new MyErrorListener();
+	}
+
+	/**
+	 * Reset back to state where this visitor can visit a new pattern.
+	 */
+	public void reset() {
+		this.orStates.clear();
+		this.byteStack.clear();
+		this.currentContext = new PatternContext();
+		this.contextStack.clear();
+		this.metadata = new JSONObject();
 	}
 
 	private static void raiseInvalidInstructionException(ParserRuleContext ctx) {
@@ -69,16 +96,14 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		if (instructionText.chars().filter(ch -> ch == '`').count() % 2 != 0) {
 			throw new QueryParseException(
-					"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction",
-					ctx);
+				"This line doesn't have a balanced number of '`' characters and didn't assemble to any instruction",
+				ctx);
 		}
-		else {
-			throw new QueryParseException(
-					"An assembly instruction in your pattern (" + instructionText +
-							") did not return any output. Make sure your assembly instructions" +
-							" are valid or that you are using a binary with the same architecture.",
-					ctx);
-		}
+		throw new QueryParseException(
+			"An assembly instruction in your pattern (" + instructionText +
+				") did not return any output. Make sure your assembly instructions" +
+				" are valid or that you are using a binary with the same architecture.",
+			ctx);
 	}
 
 	@Override
@@ -93,8 +118,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		}
 
 		var note = String.format(
-				"AnyBytesNode Start: %d End: %d Interval: %d From: Token from line #%d: Token type: PICKLED_CANARY_COMMAND data: `%s`",
-				min, max, step, ctx.start.getLine(), ctx.getText());
+			"AnyBytesNode Start: %d End: %d Interval: %d From: Token from line #%d: Token type: PICKLED_CANARY_COMMAND data: `%s`",
+			min, max, step, ctx.start.getLine(), ctx.getText());
 
 		this.currentContext.steps().add(new AnyByteSequence(min, max, step, note));
 
@@ -207,8 +232,8 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		// If we have exactly two OR options, change from a SplitMulti to a Split
 		if (middleSteps.size() == 1) {
 			List<Integer> origDests =
-					((SplitMulti) this.currentContext.steps()
-							.get(currentOrState.getStartStep())).getDests();
+				((SplitMulti) this.currentContext.steps()
+						.get(currentOrState.getStartStep())).getDests();
 
 			Split newSplit = new Split(origDests.get(0));
 			newSplit.setDest2(origDests.get(1));
@@ -284,6 +309,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 	}
 
 	private LookupStep makeLookupStepFromParseResults(Collection<AssemblyParseResult> parses) {
+
 		LookupStepBuilder builder = new LookupStepBuilder(currentContext.tables);
 
 		for (AssemblyParseResult p : parses) {
@@ -307,6 +333,14 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		return builder.buildLookupStep();
 	}
 
+	/**
+	 * Return the results of having processed the pattern as a {@link JSONObject} which can be used
+	 * to output this compiled pattern.
+	 * 
+	 * @param withDebugInfo
+	 *            Include an extra "compile_info" tag with debug information (or not)
+	 * @return A {@link JSONObject} containing the processed equivalent of the last pattern visited.
+	 */
 	public JSONObject getJSONObject(boolean withDebugInfo) {
 		this.currentContext.canonicalize();
 		JSONObject output = this.currentContext.getJson(this.metadata);
@@ -321,6 +355,13 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 		return output;
 	}
 
+	/**
+	 * Return the results of having processed the pattern as a {@link Pattern} which can be used to
+	 * perform a search.
+	 * 
+	 * @return A {@link Pattern} object containing the processed equivalent of the last pattern
+	 *         visited.
+	 */
 	public Pattern getPattern() {
 		this.currentContext.canonicalize();
 		return this.currentContext.getPattern();
@@ -359,6 +400,7 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 
 		/**
 		 * Get raw JSON (without) any debug or compile info
+		 * 
 		 * @return the JSON for this context
 		 */
 		JSONObject getJson(JSONObject metadata) {
@@ -373,5 +415,59 @@ public class PCVisitor extends pc_grammarBaseVisitor<Void> {
 			out.put("pattern_metadata", metadata);
 			return out;
 		}
+	}
+
+	/**
+	 * Update the address used by this visitor to assemble given instructions.
+	 * 
+	 * @param address
+	 *            The address that we want to compile at
+	 */
+	public void setCurrentAddress(Address address) {
+		currentAddress = address;
+	}
+
+	public void setMonitor(TaskMonitor m) {
+		monitor = m;
+	}
+
+	private static class MyErrorListener extends BaseErrorListener {
+		@Override
+		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
+				int charPositionInLine,
+				String msg, RecognitionException e) {
+			throw new QueryParseException(msg, line, charPositionInLine);
+		}
+	}
+
+	/**
+	 * Process the given pattern, making results available in {@link #getPattern()} or
+	 * {@link #getJSONObject(boolean)} methods.
+	 * 
+	 * Call {@link #reset()} in between calls to this method if reusing this instance. If
+	 * currentAddress has changed since this instance was created, call
+	 * {@link #setCurrentAddress(Address)} before calling this method
+	 * 
+	 * @param pattern
+	 *            The pattern string to parse into steps
+	 * @param newMonitor
+	 *            A monitor to display progress
+	 */
+	public void lexParseAndVisit(String pattern, TaskMonitor newMonitor) {
+		monitor = newMonitor;
+		monitor.setIndeterminate(true);
+
+		var chars = CharStreams.fromString(pattern);
+		var lexer = new pc_lexer(chars);
+		lexer.addErrorListener(errorListener);
+		var commonTokenStream = new CommonTokenStream(lexer);
+		var parser = new pc_grammar(commonTokenStream);
+		parser.addErrorListener(errorListener);
+
+		var progContext = parser.prog();
+
+		this.visit(progContext);
+
+		monitor.setIndeterminate(false);
 	}
 }

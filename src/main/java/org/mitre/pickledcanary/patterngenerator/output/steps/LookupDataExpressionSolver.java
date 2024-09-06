@@ -183,16 +183,18 @@ public class LookupDataExpressionSolver {
 		long res;
 		try {
 			res = getInstructionBytes(tf, input, sp);
-		} catch (MemoryAccessException e) {
+		}
+		catch (MemoryAccessException e) {
 			throw new ExpressionMemoryAccessException(tf, e);
 		}
 
 		res >>= tf.getShift();
 		if (tf.hasSignbit()) {
 			return TokenField.signExtend(res, tf.getBitEnd() - tf.getBitStart());
-		} else {
-			return TokenField.zeroExtend(res, tf.getBitEnd() - tf.getBitStart());
 		}
+
+		return TokenField.zeroExtend(res, tf.getBitEnd() - tf.getBitStart());
+
 	}
 
 	private static long computeOperandValueExpression(OperandValue ov, MemBuffer input, int sp, int len) {

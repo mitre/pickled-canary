@@ -21,7 +21,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	}
 
 	private static final String simpleInstruction = "MOV EBP,ESP";
-	private static final String stepsForSimpleInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[139,236]},{\"operands\":[],\"value\":[137,229]}],\"mask\":[255,255]}],\"type\":\"LOOKUP\"}";
+	private static final String stepsForSimpleInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[137,229]},{\"operands\":[],\"value\":[139,236]}],\"mask\":[255,255]}],\"type\":\"LOOKUP\"}";
 
 	private static final String simpleInstruction2 = "LEA EAX, [EBP + -0x6c]";
 	private static final String stepsForSimpleInstruction2 = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[141,68,37,148]}],\"mask\":[255,255,63,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[141,132,37,148,255,255,255]}],\"mask\":[255,255,63,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[141,133,148,255,255,255]}],\"mask\":[255,255,255,255,255,255]},{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[],\"value\":[141,69,148]}],\"mask\":[255,255,255]}],\"type\":\"LOOKUP\"}";
@@ -64,7 +64,7 @@ public class X86LePickledCanaryTest extends PickledCanaryTest {
 	private static final String tablesForSimpleScalarWildcardInstruction = "";
 
 	private static final String doubleWildcardInstruction = "MOV `Q1/E.P`,`Q1`";
-	private static final String stepsForDoubleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[139,192]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,192]}],\"mask\":[255,192]}],\"type\":\"LOOKUP\"}";
+	private static final String stepsForDoubleWildcardInstruction = "{\"data\":[{\"type\":\"MaskAndChoose\",\"choices\":[{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[137,192]},{\"operands\":[{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,7]},{\"var_id\":\"Q1\",\"type\":\"Field\",\"table_id\":0,\"mask\":[0,56]}],\"value\":[139,192]}],\"mask\":[255,192]}],\"type\":\"LOOKUP\"}";
 	private static final String tablesForDoubleWildcardInstruction = "{\"EBP\":[{\"value\":[5],\"mask\":[7]}],\"ESP\":[{\"value\":[4],\"mask\":[7]}]}";
 
 	private static final String negativeInstruction = "`NOT {`\n" + byteInstruction + "\n`} END_NOT`";

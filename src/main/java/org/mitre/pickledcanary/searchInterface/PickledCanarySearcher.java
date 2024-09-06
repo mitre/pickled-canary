@@ -1,26 +1,23 @@
 
-/* ###
- * IP: GHIDRA
- * REVIEWED: YES
+/*
+ * ### IP: GHIDRA REVIEWED: YES
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 /*
  * Based on Ghidra's sample SampleSearcher.
  */
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.searchInterface;
 
@@ -49,13 +46,18 @@ public class PickledCanarySearcher {
 	private String query;
 	private boolean removeDebugFlag;
 	private final ArrayList<TextListener> listeners = new ArrayList<>();
-	private String compiledPattern = NOT_COMPILED_STRING; // keeps track of if the pattern is compiling or not
+	private String compiledPattern = NOT_COMPILED_STRING; // keeps track of if the pattern is
+															 // compiling or not
+	private PCVisitor visitor;
 
 	public PickledCanarySearcher(Program program, Address currentAddress, String query) {
 		this.program = program;
 		this.currentAddress = currentAddress;
 		this.query = query;
 		this.removeDebugFlag = false;
+		// If we initialize visitor here, the GUI doesn't show until the visitor is created. Instead
+		// we'll initialize it on first search (which is immediately after the GUI opens)
+		this.visitor = null;
 	}
 
 	private void notifyListeners() {
@@ -65,6 +67,13 @@ public class PickledCanarySearcher {
 	}
 
 	public void search(Accumulator<SavedDataAddresses> accumulator, TaskMonitor monitor) {
+		if (this.visitor == null) {
+			this.visitor = new PCVisitor(program, currentAddress, null);
+		}
+		else {
+			this.visitor.reset();
+		}
+
 		// Don't try to search if a zero-length pattern given
 		if (query.length() == 0) {
 			return;
@@ -75,8 +84,8 @@ public class PickledCanarySearcher {
 		this.notifyListeners();
 
 		// Parse and compile our pattern to json (and tell everyone who cares)
-		PCVisitor visitor =
-				PickledCanary.createAndRunVisitor(monitor, query, program, currentAddress);
+		visitor.setCurrentAddress(currentAddress);
+		visitor.lexParseAndVisit(query, monitor);
 
 		JSONObject o = visitor.getJSONObject(!removeDebugFlag);
 
