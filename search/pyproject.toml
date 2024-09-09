@@ -3,12 +3,12 @@ requires = ["setuptools", "wheel", "setuptools-rust"]
 
 [tool.poetry]
 name = "pickled_canary"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["The MITRE Corporation"]
 
 [tool.poetry.dependencies]
-pytest = {version = "^7.1.2", python = ">=3.7"}
+pytest = { version = "^7.1.2", python = ">=3.7" }
 
 [tool.poetry.dev-dependencies]
-black = {version = "^22.6.0", python = ">=3.6.2"}
+black = { version = "^22.6.0", python = ">=3.6.2" }
