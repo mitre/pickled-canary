@@ -26,12 +26,13 @@ public class InstructionEncoding implements Comparable<InstructionEncoding> {
 	}
 
 	/**
-	 * If an operand in the operands list has the same varId as the operand being
-	 * passed into this method, their types and masks should match.
+	 * If an operand in the operands list has the same varId as the operand being passed into this
+	 * method, their types and masks should match.
 	 * 
-	 * @param operand operand to be placed in the operands list
-	 * @return true if an operand with the same varId exists and their types and
-	 *         masks match; false if no operand with same varId exists
+	 * @param operand
+	 *            operand to be placed in the operands list
+	 * @return true if an operand with the same varId exists and their types and masks match; false
+	 *         if no operand with same varId exists
 	 */
 	public boolean matches(OperandMeta operand) {
 		for (OperandMeta om : operands) {
@@ -80,21 +81,29 @@ public class InstructionEncoding implements Comparable<InstructionEncoding> {
 	}
 
 	public String toString() {
-		return "InstructionEncoding(value: " + this.value.toString() + ", operands: " + this.operands.toString() + ")";
+		return "InstructionEncoding(value: " + this.value.toString() + ", operands: " +
+			this.operands.toString() + ")";
 	}
-	
+
 	@Override
-	public int compareTo(InstructionEncoding a) {
-		int out = this.value.compareTo(a.value);
-		if (out != 0) {
-			return out;
-		} 
-		
-		out = this.operands.size() - a.operands.size();
+	public int compareTo(InstructionEncoding other) {
+		int out = this.value.compareTo(other.value);
 		if (out != 0) {
 			return out;
 		}
-		
+
+		out = this.operands.size() - other.operands.size();
+		if (out != 0) {
+			return out;
+		}
+
+		for (var i = 0; i < this.operands.size(); i++) {
+			out = this.operands.get(i).compareTo(other.operands.get(i));
+			if (out != 0) {
+				return out;
+			}
+		}
+
 		return out;
 	}
 }

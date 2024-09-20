@@ -22,6 +22,15 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 	 *              if decimal > 255)
 	 */
 	public OperandRepresentation(List<Integer> mask, List<Integer> value) {
+		if (mask == null) {
+			throw new IllegalArgumentException("Mask must not be null");
+		}
+		if (value == null) {
+			throw new IllegalArgumentException("Value must not be null");
+		}
+		if (mask.size() != value.size()) {
+			throw new IllegalArgumentException("Mask and Value must be the same length");
+		}
 		this.mask = mask;
 		this.value = value;
 	}
@@ -65,14 +74,8 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 			return false;
 		}
 		OperandRepresentation other = (OperandRepresentation) obj;
-		if (mask == null) {
-			if (other.mask != null)
-				return false;
-		} else if (!mask.equals(other.mask)) {
+		if (!mask.equals(other.mask)) {
 			return false;
-		}
-		if (value == null) {
-			return other.value == null;
 		}
 		return value.equals(other.value);
 	}

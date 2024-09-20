@@ -59,7 +59,20 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 	}
 	
 	public int compareTo(OperandMeta other) {
+		
+		if (this.type != other.type) {
+			if (this.type == TypeOfOperand.Field) {
+				return -1;
+			}
+			return 1;
+		}
+		
 		var out = this.varId.compareTo(other.varId);
+		if (out != 0) {
+			return out;
+		}
+		
+		out = Integer.compare(this.mask.size(), other.mask.size());
 		if (out != 0) {
 			return out;
 		}
@@ -71,6 +84,6 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 			}
 		}
 		
-		return Integer.compare(this.mask.size(), other.mask.size());
+		return 0;
 	}
 }
