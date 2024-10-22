@@ -3,7 +3,7 @@
 //!
 //! Most of the public modules (except for [thread] and [results]) in this
 //! module are different implementations of the our NFA engines. They *should*
-//! all be functionally equavalent, but they each have different performance
+//! all be functionally equivalent, but they each have different performance
 //! characteristics. In every case, the "main" function for each is
 //! "run_program". The most performant of these modules (currently
 //! [pikevm_loop_ring_rc]) is re-exported at the top level of this module for

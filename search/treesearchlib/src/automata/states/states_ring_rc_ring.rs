@@ -22,12 +22,18 @@ pub struct StatesRingRcRing<T: Default + Sized + Clone + Debug + PartialEq> {
     start_idx: usize,
 }
 
+const CAPACITY: usize = 100;
+const INNER_CAPACITY: usize = 10;
 impl<T: Default + Sized + Clone + Debug + PartialEq> StatesRc<T> for StatesRingRcRing<T> {
     fn new() -> Self {
+        let mut inner = VecDeque::with_capacity(CAPACITY);
+        for _ in 0..CAPACITY {
+            inner.push_back(VecDeque::with_capacity(INNER_CAPACITY));
+        }
         Self {
             // TODO: Give an option to make this dynamically larger from the
             // start
-            inner: VecDeque::with_capacity(10),
+            inner,
             start_idx: 0,
         }
     }
@@ -41,7 +47,8 @@ impl<T: Default + Sized + Clone + Debug + PartialEq> StatesRc<T> for StatesRingR
             None => {
                 self.inner.reserve(sp_index - self.inner.len() + 200);
                 while self.inner.len() <= sp_index {
-                    self.inner.push_back(VecDeque::with_capacity(4))
+                    self.inner
+                        .push_back(VecDeque::with_capacity(INNER_CAPACITY))
                 }
                 self.inner.get_mut(sp_index).unwrap()
             }
@@ -85,7 +92,13 @@ impl<T: Default + Sized + Clone + Debug + PartialEq> StatesRc<T> for StatesRingR
         // https://swtch.com/~rsc/regexp/regexp2.html starting with: "The pikevm
         // implementation given above does not completely respect thread
         // priority,"
-        x.pop_front()
+        let out = x.pop_front();
+
+        if out.is_none() {
+            self.inner.rotate_left(1);
+            self.start_idx += 1;
+        }
+        out
     }
 
     fn clear_old_states(&mut self, sp: usize) {
