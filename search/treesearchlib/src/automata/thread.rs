@@ -58,13 +58,15 @@ impl Thread {
 pub struct ThreadRc {
     pub pc_idx: usize,
     pub saved: Rc<SavedData>,
+    pub start: Option<usize>,
 }
 
 impl ThreadRc {
-    pub fn new(pc_idx: usize, saved: &Rc<SavedData>) -> Self {
+    pub fn new(pc_idx: usize, saved: &Rc<SavedData>, start: Option<usize>) -> Self {
         Self {
             pc_idx,
             saved: Rc::clone(saved),
+            start,
         }
     }
 
@@ -78,6 +80,7 @@ impl Default for ThreadRc {
         Self {
             pc_idx: 0,
             saved: Rc::new(SavedData::new()),
+            start: None,
         }
     }
 }

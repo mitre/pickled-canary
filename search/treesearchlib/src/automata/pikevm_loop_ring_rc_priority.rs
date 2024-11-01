@@ -48,19 +48,36 @@ fn add_thread<Endian: BitOrder + Clone + PartialEq, State: StatesRc<ThreadRc>>(
     pc: usize,
     input: &AddressedBits,
     saved: &mut Rc<SavedData>,
+    start: Option<usize>,
 ) {
     match prog.steps.get(pc).unwrap() {
         Op::ByteMultiNonconsuming { value } => {
             if input.len() > sp && value.contains(&input[sp]) {
-                add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved);
+                add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved, start);
             }
         }
         Op::Jmp { dest } => {
-            add_thread::<Endian, State>(prog, states, sp, *dest, input, saved);
+            add_thread::<Endian, State>(prog, states, sp, *dest, input, saved, start);
         }
         Op::Split { dest1, dest2 } => {
-            add_thread::<Endian, State>(prog, states, sp, *dest1, input, &mut Rc::clone(saved));
-            add_thread::<Endian, State>(prog, states, sp, *dest2, input, &mut Rc::clone(saved));
+            add_thread::<Endian, State>(
+                prog,
+                states,
+                sp,
+                *dest1,
+                input,
+                &mut Rc::clone(saved),
+                start,
+            );
+            add_thread::<Endian, State>(
+                prog,
+                states,
+                sp,
+                *dest2,
+                input,
+                &mut Rc::clone(saved),
+                start,
+            );
         }
         Op::SplitMulti { dests } => {
             if !dests.is_empty() {
@@ -72,6 +89,7 @@ fn add_thread<Endian: BitOrder + Clone + PartialEq, State: StatesRc<ThreadRc>>(
                         *dest,
                         input,
                         &mut Rc::clone(saved),
+                        start,
                     );
                 }
             } else {
@@ -79,8 +97,7 @@ fn add_thread<Endian: BitOrder + Clone + PartialEq, State: StatesRc<ThreadRc>>(
             }
         }
         Op::SaveStart => {
-            Rc::make_mut(saved).start = Some(sp);
-            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved);
+            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved, Some(sp));
         }
         Op::Save { slot } => {
             // let saved_ready_to_mut = Rc::make_mut(saved);
@@ -89,57 +106,61 @@ fn add_thread<Endian: BitOrder + Clone + PartialEq, State: StatesRc<ThreadRc>>(
             // // states.add(sp, Thread::new(pc + 1, &saved));
             // *saved = Rc::new(saved_ready_to_mut.clone());
             Rc::make_mut(saved).captures.insert(*slot, sp);
-            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved);
+            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved, start);
         }
         Op::Label { value } => {
             Rc::make_mut(saved).labels.insert(
                 value.clone(),
                 TryInto::<i128>::try_into(sp).unwrap() + i128::from(input.get_base_address()),
             );
-            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved);
+            add_thread::<Endian, State>(prog, states, sp, pc + 1, input, saved, start);
         }
-        _ => states.add(sp, ThreadRc::new(pc, saved)),
+        _ => states.add(sp, ThreadRc::new(pc, saved, start)),
     }
 }
 
 // #[cfg_attr(test, mutate)]
 pub fn process_thread_rc<Endian: BitOrder + Clone + PartialEq, State: StatesRc<ThreadRc>>(
-    mut pc: usize,
-    saved: &mut Rc<SavedData>,
+    thread: &mut ThreadRc,
     sp: usize,
     prog: &Pattern<Endian>,
     input: &AddressedBits,
     states: &mut State, // StatesRingRcFixed<ThreadRc>,
     cache: &mut LookupCache<Endian>,
 ) -> Option<Results> {
+    let mut pc = thread.pc_idx;
+    let saved = &mut thread.saved;
+    let start = thread.start;
     loop {
         match prog.steps.get(pc).unwrap() {
             Op::Byte { value } => {
                 if input.len() > sp && *value == input[sp] {
-                    add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved);
+                    add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved, start);
                 }
                 break;
             }
             Op::MaskedByte { mask, value } => {
                 if input.len() > sp && *value == (input[sp] & *mask) {
-                    add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved);
+                    add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved, start);
                 }
                 break;
             }
             Op::Match { match_number } => {
+                let mut final_saved = Rc::make_mut(saved).clone();
+                final_saved.start = start;
                 return Some(Results {
                     matched: true,
                     match_number: Some(*match_number),
-                    saved: Some(Rc::make_mut(saved).clone()),
+                    saved: Some(final_saved),
                 });
             }
             Op::AnyByte => {
-                add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved);
+                add_thread::<Endian, State>(prog, states, sp + 1, pc + 1, input, saved, start);
                 break;
             }
             Op::AnyByteSequence { min, max, interval } => {
                 for i in (*min..(*max + 1)).step_by(*interval) {
-                    add_thread::<Endian, State>(prog, states, sp + i, pc + 1, input, saved);
+                    add_thread::<Endian, State>(prog, states, sp + i, pc + 1, input, saved, start);
                 }
                 break;
             }
@@ -159,6 +180,7 @@ pub fn process_thread_rc<Endian: BitOrder + Clone + PartialEq, State: StatesRc<T
                             pc + 1,
                             input,
                             saved,
+                            start,
                         );
                         break;
                     }
@@ -185,6 +207,7 @@ pub fn process_thread_rc<Endian: BitOrder + Clone + PartialEq, State: StatesRc<T
                             pc + 1,
                             input,
                             saved,
+                            start,
                         );
                         break;
                     }
@@ -225,6 +248,7 @@ pub fn pikevm_inner_new_rc<Endian: BitOrder + Clone + PartialEq, State: StatesRc
         0,
         input,
         &mut Rc::new(SavedData::default()),
+        None,
     );
 
     // add_thread::<Endian, State>(prog, states, 0, 0, &mut Rc::new(SavedData::default()));
@@ -242,15 +266,9 @@ pub fn pikevm_inner_new_rc<Endian: BitOrder + Clone + PartialEq, State: StatesRc
             let mut t = option_next_thread.unwrap();
             // eprintln!("Pulled thread: pc={} at sp {}", t.pc_idx, sp);
 
-            if let Some(x) = process_thread_rc::<Endian, State>(
-                t.pc_idx,
-                &mut t.saved,
-                sp,
-                prog,
-                input,
-                states,
-                &mut cache,
-            ) {
+            if let Some(x) =
+                process_thread_rc::<Endian, State>(&mut t, sp, prog, input, states, &mut cache)
+            {
                 return x;
             }
             // eprintln!("After States: {:?}", states);
