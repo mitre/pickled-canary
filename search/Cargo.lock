@@ -479,7 +479,7 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "pclib"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bitvec",
  "criterion",
@@ -738,7 +738,7 @@ dependencies = [
 
 [[package]]
 name = "treesearchlib"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bitvec",
  "criterion",
@@ -750,7 +750,7 @@ dependencies = [
 
 [[package]]
 name = "treesearchtool"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bitvec",
  "clap",
@@ -793,7 +793,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "viz"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bitvec",
  "clap",
