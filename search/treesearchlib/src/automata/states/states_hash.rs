@@ -4,7 +4,7 @@
 //!
 //! [crate::states::states_ring] improves upon this.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::vec;
 use alloc::vec::Vec;

@@ -2,7 +2,7 @@
 //! in JSON. This JSON form of things is later converted into a [binary
 //! format](super::bitstructs) for effecient processing.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::convert::TryInto;
 
@@ -92,19 +92,11 @@ pub enum LookupType {
 pub struct InstructionEncoding {
     pub value: Vec<u8>,
     pub operands: Vec<OperandType>,
+    pub context: Option<Vec<u32>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct InstructionEncodingAligned {
-    pub value: Vec<u8>,
-    pub operands: Vec<OperandType>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct InstructionEncodingu32 {
-    pub value: Vec<u8>,
-    pub operands: Vec<OperandType>,
-}
+type InstructionEncodingAligned = InstructionEncoding;
+type InstructionEncodingu32 = InstructionEncoding;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
@@ -198,7 +190,11 @@ impl ContextField {
     /// This mirrors the process used in LookupDateExpressionSolver.java for a
     /// ContextField, which itself is modeled on the original Ghidra
     /// implementation of these things.
-    pub fn get_value(&self, bytes: &[u8]) -> i64 {
+    pub fn get_value(&self, bytes: &Option<Vec<u8>>) -> i64 {
+        let bytes: &[u8] = bytes
+            .as_ref()
+            .expect("Expected to have been given context for this instruction")
+            .as_slice();
         // Get the specific bytes for this ContextField from the given bytes input
         let size = self.byteend - self.bytestart + 1;
         if size > bytes.len() {
@@ -245,10 +241,16 @@ pub struct BinaryPatternExpressionChildren {
 }
 
 impl BinaryPatternExpressionChildren {
-    pub fn get_values(&self, bits: &[u8], len: i64, sp_base_address: i64) -> (i64, i64) {
+    pub fn get_values(
+        &self,
+        bits: &[u8],
+        context: &Option<Vec<u8>>,
+        len: i64,
+        sp_base_address: i64,
+    ) -> (i64, i64) {
         (
-            self.left.get_value(bits, len, sp_base_address),
-            self.right.get_value(bits, len, sp_base_address),
+            self.left.get_value(bits, context, len, sp_base_address),
+            self.right.get_value(bits, context, len, sp_base_address),
         )
     }
 }
@@ -307,46 +309,65 @@ pub enum PatternExpression {
 }
 
 impl PatternExpression {
-    pub fn get_value(&self, bits: &[u8], len: i64, sp_base_address: i64) -> i64 {
+    pub fn get_value(
+        &self,
+        bits: &[u8],
+        context: &Option<Vec<u8>>,
+        len: i64,
+        sp_base_address: i64,
+    ) -> i64 {
         match self {
             PatternExpression::Add { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val + right_val
             }
             PatternExpression::Sub { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val - right_val
             }
             PatternExpression::Mult { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val * right_val
             }
             PatternExpression::LeftShift { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val << right_val
             }
             PatternExpression::RightShift { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val >> right_val
             }
             PatternExpression::And { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val & right_val
             }
             PatternExpression::Or { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val | right_val
             }
             PatternExpression::Xor { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val ^ right_val
             }
             PatternExpression::Div { children } => {
-                let (left_val, right_val) = children.get_values(bits, len, sp_base_address);
+                let (left_val, right_val) =
+                    children.get_values(bits, context, len, sp_base_address);
                 left_val / right_val
             }
-            PatternExpression::Minus { child } => -(child.get_value(bits, len, sp_base_address)),
-            PatternExpression::Not { child } => !(child.get_value(bits, len, sp_base_address)),
+            PatternExpression::Minus { child } => {
+                -(child.get_value(bits, context, len, sp_base_address))
+            }
+            PatternExpression::Not { child } => {
+                !(child.get_value(bits, context, len, sp_base_address))
+            }
             PatternExpression::StartInstructionValue => sp_base_address, //sp + sp_base_address,
             PatternExpression::EndInstructionValue => len + sp_base_address, //sp + len + sp_base_address,
             PatternExpression::ConstantValue { value } => *value,
@@ -355,10 +376,10 @@ impl PatternExpression {
                 // stuff done in the Java: ParserWalker.setOutOfBandState.
                 // However we don't currently adjust this in Java either...
                 let (_, offset_bits) = bits.split_at(*offset as usize);
-                child.get_value(offset_bits, len, sp_base_address + *offset)
+                child.get_value(offset_bits, context, len, sp_base_address + *offset)
             }
             PatternExpression::TokenField { value } => value.get_value(bits),
-            PatternExpression::ContextField { value } => value.get_value(bits),
+            PatternExpression::ContextField { value } => value.get_value(context),
         }
     }
 }
@@ -602,7 +623,7 @@ pub mod tests {
 
         assert_eq!(
             0xe950,
-            test_expression.get_value(&[0x07, 0xf0, 0x47, 0xff], 4, 0x6abe)
+            test_expression.get_value(&[0x07, 0xf0, 0x47, 0xff], &None, 4, 0x6abe)
         );
     }
 }

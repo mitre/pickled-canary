@@ -1,3 +1,5 @@
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
+
 # This CI builds, tests, and (optionally) creates a draft release of PC
 name: Pickled-Canary CI
 
@@ -120,6 +122,12 @@ jobs:
           - GHIDRA_VERSION: "11.2"
             GHIDRA_BUILD_DATE: "20240926"
             GHIDRA_JDK_VERSION: 21
+          - GHIDRA_VERSION: "11.2.1"
+            GHIDRA_BUILD_DATE: "20241105"
+            GHIDRA_JDK_VERSION: 21
+          - GHIDRA_VERSION: "11.3"
+            GHIDRA_BUILD_DATE: "20250205"
+            GHIDRA_JDK_VERSION: 21
     env:
       GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
     steps:
@@ -144,8 +152,8 @@ jobs:
         env:
           GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
         run: |
-          gradle build
-          gradle
+          xvfb-run gradle build
+          xvfb-run gradle
       - name: Archive PC Extension
         uses: actions/upload-artifact@v4
         with:
@@ -215,6 +223,12 @@ jobs:
           - GHIDRA_VERSION: "11.2"
             GHIDRA_BUILD_DATE: "20240926"
             GHIDRA_JDK_VERSION: 21
+          - GHIDRA_VERSION: "11.2.1"
+            GHIDRA_BUILD_DATE: "20241105"
+            GHIDRA_JDK_VERSION: 21
+          - GHIDRA_VERSION: "11.3"
+            GHIDRA_BUILD_DATE: "20250205"
+            GHIDRA_JDK_VERSION: 21
     env:
       GHIDRA_LABEL: ${{ matrix.GHIDRA_VERSION }}_${{ matrix.GHIDRA_BUILD_DATE }}
     steps:
@@ -238,13 +252,12 @@ jobs:
       - name: Execute Gradle test and coverage
         env:
           GHIDRA_INSTALL_DIR: ${{ github.workspace }}/../Ghidra/ghidra_${{ matrix.GHIDRA_VERSION }}_PUBLIC
-        run: gradle test jacocoTestReport
+        run: xvfb-run gradle test jacocoTestReport
       - name: Archive Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: pickled_canary-${{ env.GHIDRA_LABEL }}_coverage_report
           path: build/reports/jacoco/test/*
-
 
   build_py:
     name: Build wheels on ${{ matrix.os }}
@@ -263,9 +276,9 @@ jobs:
       - name: Build wheels
         run: cd search && python -m cibuildwheel --output-dir wheelhouse
         env:
-            CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2  -sSf https://sh.rustup.rs | sh -s -- --default-toolchain nightly-x86_64-unknown-linux-gnu -y && source $HOME/.cargo/env && rustup update"
-            CIBW_BEFORE_ALL_WINDOWS: rustup target add i686-pc-windows-msvc
-            CIBW_ENVIRONMENT_LINUX: "PATH=$HOME/.cargo/bin:$PATH"
+          CIBW_BEFORE_ALL_LINUX: "curl --proto '=https' --tlsv1.2  -sSf https://sh.rustup.rs | sh -s -- --default-toolchain nightly-x86_64-unknown-linux-gnu -y && source $HOME/.cargo/env && rustup update"
+          CIBW_BEFORE_ALL_WINDOWS: rustup target add i686-pc-windows-msvc
+          CIBW_ENVIRONMENT_LINUX: "PATH=$HOME/.cargo/bin:$PATH"
       - uses: actions/upload-artifact@v4
         with:
           name: python-wheels-${{ matrix.os }}

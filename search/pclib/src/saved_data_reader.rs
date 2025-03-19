@@ -1,3 +1,4 @@
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 use core::ffi::{c_int, c_ulonglong};
 use std::{collections::BTreeMap, convert::TryInto, ffi::CString, mem, ptr};
 

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
+
 // Builds a Ghidra Extension for a given Ghidra installation.
 //
 // An absolute path to the Ghidra installation directory must be supplied either by setting the 
@@ -42,12 +45,15 @@ if (System.env.GHIDRA_INSTALL_DIR) {
 else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
 	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
 }
-
-if (ghidraInstallDir) {
-	apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
-}
 else {
-	throw new GradleException("GHIDRA_INSTALL_DIR is not defined!")
+	throw new FileNotFoundException("GHIDRA_INSTALL_DIR is not defined!")
+}
+
+task distributeExtension {
+	group "Ghidra"
+
+	apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+	dependsOn ':buildExtension'
 }
 //----------------------END "DO NOT MODIFY" SECTION-------------------------------
 
@@ -57,9 +63,15 @@ repositories {
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html for more info.
 	// Ex: mavenCentral()
 	mavenCentral()
+
+	// Also reference our local lib directory so builds work offline
+	flatDir {
+		dirs 'lib'
+	}
 }
 
 test {
+	jvmArgs '--add-exports', 'java.desktop/sun.awt=ALL-UNNAMED', '--add-exports', 'java.desktop/sun.swing=ALL-UNNAMED'
 	useJUnitPlatform()
 
 	maxHeapSize='1G'
@@ -75,7 +87,13 @@ dependencies {
 	testImplementation 'org.jacoco:org.jacoco.agent:0.8.9'
 	testImplementation 'org.jacoco:org.jacoco.ant:0.8.9'
 
+	// antlr dependencies. We have to specify them all here manually so things
+	// work offline. Otherwise the antlr gradle plugin tries to download them
+	// (even when offline)
 	antlr "org.antlr:antlr4:4.13.1"
+	antlr "org.antlr:antlr4-runtime:4.13.1"
+	antlr "org.antlr:ST4:4.3.4"
+	antlr "org.antlr:antlr-runtime:3.5.3"
 }
 
 jacoco {
@@ -99,6 +117,9 @@ def antlrPackage = "org.mitre.pickledcanary.patterngenerator.generated"
 generateGrammarSource {
 	arguments += ["-visitor", "-package", antlrPackage]
 	outputDirectory = new File("${antlrOut}/${antlrPackage.replace(".", File.separator)}".toString())
+	// Make sure we have our offline specified dependencies available before
+	// running this task
+	dependsOn copyDependencies
 }
 
 sourceSets {

@@ -2,7 +2,7 @@
 //! its binary format (the JSON equivalants are found in
 //! [jsonstructs](super::jsonstructs)) along with their methods.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 pub use self::instruction_encoding::{InstructionEncoding, InstructionEncodingTrait};
 use self::instruction_encoding_aligned::InstructionEncodingAligned;
@@ -83,6 +83,7 @@ pub mod tests {
             choices: vec![InstructionEncoding {
                 value: BitVec::<u8, Msb0>::from_slice(&[0xa2u8, 0x0, 0x55, 0x00]),
                 operands: vec![],
+                context: None,
             }],
         };
 
@@ -154,6 +155,7 @@ pub mod tests {
                         var_id: ":Q3".to_string(),
                     },
                 ],
+                context: None,
             },
             vec![values_one.into()],
         )

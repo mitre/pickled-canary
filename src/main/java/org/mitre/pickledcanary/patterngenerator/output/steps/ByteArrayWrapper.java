@@ -1,4 +1,4 @@
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -28,6 +28,7 @@ final record ByteArrayWrapper(byte[] data) implements JSONString, Comparable<Byt
 		return Arrays.hashCode(data);
 	}
 
+	@Override
 	public String toJSONString() {
 		return "[" + PCBytes.integerList(data)
 				.stream()
@@ -53,6 +54,7 @@ final record ByteArrayWrapper(byte[] data) implements JSONString, Comparable<Byt
 		return out;
 	}
 
+	@Override
 	public String toString() {
 		return toJSONString();
 	}

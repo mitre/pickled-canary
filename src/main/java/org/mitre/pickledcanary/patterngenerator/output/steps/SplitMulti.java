@@ -1,21 +1,29 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * A step that creates multiple branches in a pattern.
+ */
 public class SplitMulti extends Step {
 
 	private final List<Integer> dests;
 
-	public SplitMulti(int dest1) {
+	public SplitMulti() {
 		super(StepType.SPLITMULTI, null);
 		this.dests = new ArrayList<>();
+	}
+
+	public SplitMulti(int dest1) {
+		this();
 		this.dests.add(dest1);
 	}
 
@@ -53,5 +61,46 @@ public class SplitMulti extends Step {
 				this.dests.set(i, val);
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		List<String> strDests = new ArrayList<>();
+		for (int dest : dests) {
+			strDests.add(String.valueOf(dest));
+		}
+		return "SPLITMULTI Dests: [" + String.join(",", strDests) + "]";
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		// self check
+		if (this == o) {
+			return true;
+		}
+		// null check
+		// type check and cast
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SplitMulti other = (SplitMulti) o;
+		// field comparison
+		if (!Objects.equals(this.stepType, other.stepType)) {
+			return false;
+		}
+		if (this.dests.size() != other.dests.size()) {
+			return false;
+		}
+		for (int i = 0; i < this.dests.size(); i++) {
+			if (!this.dests.get(i).equals(other.dests.get(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(stepType, dests);
 	}
 }

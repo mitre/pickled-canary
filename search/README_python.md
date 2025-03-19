@@ -23,4 +23,4 @@ To build a wheel:
 
 - `pip wheel -w dist --no-deps .`
 
-Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+> Copyright (C) 2025 The MITRE Corporation All Rights Reserved

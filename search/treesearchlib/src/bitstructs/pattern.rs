@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -296,7 +296,7 @@ impl<Endian: BitOrder + Clone> Pattern<Endian> {
     /// non-consuming opcodes)
     ///
     /// # Arguments
-    /// * `step` - The step to check if it's a valid possible optimiation
+    /// * `step` - The step to check if it's a valid possible optimization
     ///   location.
     /// * `visited` - List of steps which have been evaluated so far. Should be
     ///   an empty vec on initial call. If we encounter the same step more than
@@ -322,7 +322,7 @@ impl<Endian: BitOrder + Clone> Pattern<Endian> {
         }
         visited.push(step);
 
-        // Keep a list of children of this step which are themslves optimizable.
+        // Keep a list of children of this step which are themselves optimizable.
         // We'll later possibly remove these from being considered optimization
         // points (because it's better to optimize the parent rather than the
         // children)
@@ -787,6 +787,7 @@ pub mod tests {
                                 mask: BitVec::new(),
                                 var_id: "dummy".to_string(),
                             }],
+                            context: None,
                         }],
                     }],
                 },
@@ -810,6 +811,7 @@ pub mod tests {
                                 mask: BitVec::new(),
                                 var_id: "filler".to_string(),
                             }],
+                            context: None,
                         }],
                     }],
                 },
@@ -831,6 +833,7 @@ pub mod tests {
                                 mask: BitVec::new(),
                                 var_id: "dummy".to_string(),
                             }],
+                            context: None,
                         }],
                     }],
                 },
@@ -847,6 +850,7 @@ pub mod tests {
                                 mask: BitVec::new(),
                                 var_id: "filler".to_string(),
                             }],
+                            context: None,
                         }],
                     }],
                 },
@@ -1102,6 +1106,7 @@ pub mod tests {
                         choices: vec![InstructionEncodingAligned {
                             value: vec![0x01, 0x02],
                             operands: vec![],
+                            context: None,
                         }],
                     }],
                 },
@@ -1147,6 +1152,7 @@ pub mod tests {
                         choices: vec![InstructionEncodingAligned {
                             value: vec![0x01, 0x02],
                             operands: vec![],
+                            context: None,
                         }],
                     }],
                 },

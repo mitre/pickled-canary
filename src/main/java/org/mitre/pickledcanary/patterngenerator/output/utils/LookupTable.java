@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
@@ -22,7 +22,7 @@ public class LookupTable implements Comparable<LookupTable>{
 
 	/**
 	 * Constructor for LookupTables.
-	 * 
+	 *
 	 * @param operand the assembly operand
 	 * @param mask    the mask of the operand, as a decimal (use more than one byte
 	 *                if decimal > 255)
@@ -36,7 +36,7 @@ public class LookupTable implements Comparable<LookupTable>{
 
 	/**
 	 * Put data in the tables.
-	 * 
+	 *
 	 * @param operand the operand to put in the table
 	 * @param mask    the mask of the operand, as a decimal (use more than one byte
 	 *                if decimal > 255)
@@ -53,7 +53,7 @@ public class LookupTable implements Comparable<LookupTable>{
 
 	/**
 	 * Get the JSON representation of a LookupTable.
-	 * 
+	 *
 	 * @return JSON
 	 */
 	public JSONObject getJson() {
@@ -77,10 +77,7 @@ public class LookupTable implements Comparable<LookupTable>{
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
 		LookupTable other = (LookupTable) obj;
@@ -99,6 +96,7 @@ public class LookupTable implements Comparable<LookupTable>{
 		return null;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder out = new StringBuilder("LookupTable: ");
 		for (Map.Entry<String, OperandTable> entry : operandTables.entrySet()) {
@@ -114,9 +112,9 @@ public class LookupTable implements Comparable<LookupTable>{
 			return out;
 		}
 
-		var keys = new ArrayList<String>(operandTables.keySet());
+		ArrayList<String> keys = new ArrayList<>(operandTables.keySet());
 		Collections.sort(keys);
-		var oKeys = new ArrayList<String>(o.operandTables.keySet());
+		ArrayList<String> oKeys = new ArrayList<>(o.operandTables.keySet());
 		Collections.sort(oKeys);
 		for (var i = 0; i < keys.size(); i++) {
 			out = keys.get(i).compareTo(oKeys.get(i));

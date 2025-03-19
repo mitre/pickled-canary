@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<processor_spec>
+    <default_symbols>
+        <symbol name="start" address="ram:0x0000" type="code" entry="true" />
+    </default_symbols>
+</processor_spec>

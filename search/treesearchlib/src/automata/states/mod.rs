@@ -8,7 +8,7 @@
 //! Because this is is such a performance bottleneck, we've iterated through
 //! several implementations as we work to find which works best.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::vec::Vec;
 use core::fmt::Debug;

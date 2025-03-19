@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use std::collections::HashMap;
 
@@ -204,6 +204,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         choices: vec![InstructionEncoding {
             value: BitVec::<u8, Msb0>::from_slice(&[0xa2u8, 0x0, 0x55, 0x00]),
             operands: vec![],
+            context: None,
         }],
     };
     let mut progs = HashMap::new();

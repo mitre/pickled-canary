@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.search;
 
@@ -17,6 +17,7 @@ import org.mitre.pickledcanary.patterngenerator.output.steps.AnyByte;
 import org.mitre.pickledcanary.patterngenerator.output.steps.AnyByteSequence;
 import org.mitre.pickledcanary.patterngenerator.output.steps.Byte;
 
+import ghidra.program.model.address.Address;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.util.task.TaskMonitor;
@@ -35,29 +36,80 @@ public class Pikevm {
 	protected final Pattern pattern;
 	protected final MemBuffer input;
 	protected final TaskMonitor monitor;
+	protected final boolean doDotStar;
+	protected int sp = 0;
+	protected int spOfLastAddedThread = -1;
+	protected Address max = null;
 
 	public Pikevm(Pattern pattern, MemBuffer input, TaskMonitor monitor) {
 		this.states = new PikevmStates();
 		this.pattern = pattern;
 		this.input = input;
 		this.monitor = monitor;
+
+		this.doDotStar = this.startsWithDotStar();
+	}
+
+	/**
+	 * Set the max address that should be searched.
+	 * 
+	 * Implementation detail: Since we often process a "match" step one byte after the end of a
+	 * match this function will add one to the given address before it's stored.
+	 * 
+	 * @param max
+	 */
+	public void setMaxAddress(Address max) {
+		this.max = max.add(1);
+	}
+
+	private boolean startsWithDotStar() {
+		boolean startsWithDotStar = true;
+		Pattern dotStar = Pattern.getDotStar().append(Pattern.getSaveStart());
+		int dotStartSize = dotStar.steps.size();
+		if (pattern.steps.size() >= dotStartSize+1) {
+			for (int i = 0; i < dotStartSize; i++) {
+				if (!pattern.steps.get(i).equals(dotStar.steps.get(i))) {
+					startsWithDotStar = false;
+					break;
+				}
+			}
+		}
+		return startsWithDotStar;
 	}
 
 	/**
 	 * Execute this pikevm with the parameters supplied on creation.
+	 * 
+	 * If called multiple times, subsequent calls will resume searching with the state left behind
+	 * after the previous match (e.g. searching will continue as if the previously obtained match
+	 * was not a match)
 	 *
 	 * @return
 	 * @throws MemoryAccessException
 	 */
 	public SavedData run() {
-		int sp = 0;
-		this.addThread(sp, 0, new SavedData());
+		long startingMonitorValue = this.monitor.getProgress();
 
+		if (!this.doDotStar && spOfLastAddedThread != sp) {
+			this.addThread(sp, 0, new SavedData());
+			spOfLastAddedThread = sp;
+		}
 		// This will throw an exception when it reaches the end
 		while (true) {
-
+			PikevmThread curPikevmThread = null;
 			if (sp % 256 == 0 && this.monitor.isCancelled()) {
 				return null;
+			}
+			
+			if (sp % 0x1000 == 0) {
+				monitor.setProgress(startingMonitorValue + sp);
+			}
+
+			if (this.doDotStar && spOfLastAddedThread != sp) {
+				SavedData s = new SavedData();
+				s.start = sp;
+				curPikevmThread = new PikevmThread(4, s);
+				spOfLastAddedThread = sp;
 			}
 
 			// bail when we've reached one past the end of our readable bytes.
@@ -70,22 +122,33 @@ public class Pikevm {
 				break;
 			}
 
+			if (this.max != null) {
+				if (this.input.getAddress().add(sp).compareTo(this.max) > 0) {
+					break;
+				}
+			}
+
 			while (true) {
-				PikevmThread curPikevmThread = this.states.getNextThread(sp);
+				if (curPikevmThread == null) {
+					curPikevmThread = this.states.getNextThread(sp);
+				}
 				if (curPikevmThread == null) {
 					break;
 				}
 
 				SavedData result;
 				try {
-					result = this.processThread(sp, curPikevmThread);
+					result = this.processThread(curPikevmThread);
 				} catch (MemoryAccessException e) {
+					curPikevmThread = null;
 					continue;
 				}
 				if (result != null) {
 					return result;
 				}
+				curPikevmThread = null;
 			}
+			curPikevmThread = null;
 			sp += 1;
 		}
 		return null;
@@ -97,31 +160,31 @@ public class Pikevm {
 	 * This pre-processes non-blocking steps to preserve match priority (e.g. this
 	 * follows all splits and jmps and creates threads for all the destinations)
 	 * 
-	 * @param sp
+	 * @param spNext
 	 * @param pc
 	 * @param saved
 	 */
-	private void addThread(int sp, int pc, SavedData saved) {
+	private void addThread(int spNext, int pc, SavedData saved) {
 		Step curStep = this.pattern.steps.get(pc);
 		if (curStep instanceof Jmp jmp) {
-			this.addThread(sp, jmp.getDest(), saved);
+			this.addThread(spNext, jmp.getDest(), saved);
 		} else if (curStep instanceof Split split) {
-			this.addThread(sp, split.getDest1(), new SavedData(saved));
-			this.addThread(sp, split.getDest2(), saved);
+			this.addThread(spNext, split.getDest1(), new SavedData(saved));
+			this.addThread(spNext, split.getDest2(), saved);
 		} else if (curStep instanceof SplitMulti splitMulti) {
 			for (int dest : splitMulti.getDests()) {
-				this.addThread(sp, dest, new SavedData(saved));
+				this.addThread(spNext, dest, new SavedData(saved));
 			}
 		} else if (curStep instanceof SaveStart) {
-			saved.start = sp;
-			this.addThread(sp, pc + 1, saved);
+			saved.start = spNext;
+			this.addThread(spNext, pc + 1, saved);
 		} else if (curStep instanceof Label label) {
 			SavedData newSavedData = new SavedData(saved);
-			if (newSavedData.addOrFail(label.getValue(), input.getAddress().add(sp).getUnsignedOffset())) {
-				this.addThread(sp, pc + 1, newSavedData);
+			if (newSavedData.addOrFail(label.getValue(), input.getAddress().add(spNext).getUnsignedOffset())) {
+				this.addThread(spNext, pc + 1, newSavedData);
 			}
 		} else {
-			this.states.add(sp, new PikevmThread(pc, saved));
+			this.states.add(spNext, new PikevmThread(pc, saved));
 		}
 	}
 
@@ -129,12 +192,11 @@ public class Pikevm {
 	 * Process a thread with the given parameters, adding additional threads to
 	 * <code>this.states</code> to be processed later if necessary.
 	 * 
-	 * @param sp
 	 * @param pikevmThread
 	 * @return A Result if a match is found, null otherwise.
 	 * @throws MemoryAccessException
 	 */
-	private SavedData processThread(int sp, PikevmThread pikevmThread) throws MemoryAccessException {
+	private SavedData processThread(PikevmThread pikevmThread) throws MemoryAccessException {
 		int pc = pikevmThread.pc();
 		SavedData saved = pikevmThread.saved();
 		Step curStep = this.pattern.steps.get(pc);
@@ -165,6 +227,14 @@ public class Pikevm {
 		} else if (curStep instanceof Match) {
 			saved.end = sp;
 			return saved;
+		}
+		else if (curStep instanceof Jmp || curStep instanceof Split ||
+			curStep instanceof SplitMulti || curStep instanceof SaveStart ||
+			curStep instanceof Label) {
+			// We should only hit this case on the FIRST step of a pattern (all others should be
+			// handled by recursive calls in addThread)
+			this.addThread(sp, pc, saved);
+			return null;
 		}
 		throw new UnsupportedOperationException("Shouldn't Get here! Is there an other opcode which needs to be implemented?");
 	}

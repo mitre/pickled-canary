@@ -1,6 +1,7 @@
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 [package]
 name = "treesearchtool"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Peter <plucia@mitre.org>"]
 edition = "2018"
 license-file = "LICENSE.txt"

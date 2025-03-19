@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 #![feature(test)]
 
@@ -344,14 +344,17 @@ fn lookup_bitvec(b: &mut Bencher) {
             InstructionEncoding {
                 value: BitVec::<u8, Msb0>::from_slice(&[0xa2u8, 0x0, 0x55, 0x00]),
                 operands: vec![],
+                context: None,
             },
             InstructionEncoding {
                 value: BitVec::<u8, Msb0>::from_slice(&[0x77u8, 0x02, 0x54, 0x01]),
                 operands: vec![],
+                context: None,
             },
             InstructionEncoding {
                 value: BitVec::<u8, Msb0>::from_slice(&[0xb3u8, 0x10, 0x30, 0x70]),
                 operands: vec![],
+                context: None,
             },
         ],
     };
@@ -372,14 +375,17 @@ fn lookup_aligned(b: &mut Bencher) {
             InstructionEncodingAligned {
                 value: vec![0xa2u8, 0x0, 0x55, 0x00],
                 operands: vec![],
+                context: None,
             },
             InstructionEncodingAligned {
                 value: vec![0x77u8, 0x02, 0x54, 0x01],
                 operands: vec![],
+                context: None,
             },
             InstructionEncodingAligned {
                 value: vec![0xb3u8, 0x10, 0x30, 0x70],
                 operands: vec![],
+                context: None,
             },
         ],
     };
@@ -400,14 +406,17 @@ fn lookup_u32(b: &mut Bencher) {
             InstructionEncodingu32 {
                 value: 0xa2005500,
                 operands: vec![],
+                context: None,
             },
             InstructionEncodingu32 {
                 value: 0x77025401,
                 operands: vec![],
+                context: None,
             },
             InstructionEncodingu32 {
                 value: 0xb3103070,
                 operands: vec![],
+                context: None,
             },
         ],
     };

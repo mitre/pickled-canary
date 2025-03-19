@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
@@ -22,7 +22,7 @@ public class OperandTable implements Comparable<OperandTable> {
 
 	/**
 	 * Constructor of OperandTable.
-	 * 
+	 *
 	 * @param mask  the mask of the operand, as a decimal (use more than one byte if
 	 *              decimal > 255)
 	 * @param value the value of the operand, as a decimal (use more than one byte
@@ -35,7 +35,7 @@ public class OperandTable implements Comparable<OperandTable> {
 
 	/**
 	 * Add a mask and binary representation to the table.
-	 * 
+	 *
 	 * @param mask  the mask of the operand, as a decimal (use more than one byte if
 	 *              decimal > 255)
 	 * @param value the value of the operand, as a decimal (use more than one byte
@@ -47,7 +47,7 @@ public class OperandTable implements Comparable<OperandTable> {
 
 	/**
 	 * Get the JSON representation of this table.
-	 * 
+	 *
 	 * @return JSON
 	 */
 	public JSONArray getJson() {
@@ -74,10 +74,7 @@ public class OperandTable implements Comparable<OperandTable> {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
 		OperandTable other = (OperandTable) obj;
@@ -96,6 +93,7 @@ public class OperandTable implements Comparable<OperandTable> {
 		return false;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder out = new StringBuilder("Operand Table:");
 		for (OperandRepresentation x : this.reps) {
@@ -104,6 +102,7 @@ public class OperandTable implements Comparable<OperandTable> {
 		return out.toString();
 	}
 
+	@Override
 	public int compareTo(OperandTable other) {
 		var out = Integer.compare(reps.size(), other.reps.size());
 		if (out != 0) {

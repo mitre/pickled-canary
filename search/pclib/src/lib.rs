@@ -9,7 +9,7 @@
 ///  * http://saidvandeklundert.net/learn/2021-11-06-calling-rust-from-python/
 ///  * https://doc.rust-lang.org/nomicon/ffi.html *
 ///
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 pub mod core;
 pub mod enforcementerror;
 pub mod enforcementresults;

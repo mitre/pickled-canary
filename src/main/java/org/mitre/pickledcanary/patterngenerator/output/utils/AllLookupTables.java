@@ -1,14 +1,20 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.mitre.pickledcanary.util.PCBytes;
 
 import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
 import ghidra.asm.wild.WildOperandInfo;
-import org.json.JSONArray;
-import org.mitre.pickledcanary.util.PCBytes;
 
 //@formatter:off
 /**
@@ -48,7 +54,7 @@ public class AllLookupTables {
 	// map from LookupTable hash to its index in the list in E (above)
 	// used to determine table_id field in capture groups
 	private final HashMap<Integer, Integer> lookupTableHashToOutIdx;
-	
+
 	// final tables list in sorted order
 	private ArrayList<LookupTable> noDupTables;
 
@@ -111,7 +117,7 @@ public class AllLookupTables {
 	 */
 	public JSONArray getJson() {
 		List<LookupTable> tablesOut = this.getPatternTables();
-		
+
 		JSONArray out = new JSONArray();
 		for (LookupTable t : tablesOut) {
 			out.put(t.getJson());
@@ -121,7 +127,6 @@ public class AllLookupTables {
 
 	/**
 	 * Get the Pattern representation of the tables.
-	 *
 	 */
 	public List<LookupTable> getPatternTables() {
 		if (bitMaskToLookupTableHash.isEmpty()) {

@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
@@ -15,7 +15,7 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 
 	/**
 	 * One mask and binary representation of the operand in {@link LookupTable}.
-	 * 
+	 *
 	 * @param mask  the mask of the operand, as a decimal (use more than one byte if
 	 *              decimal > 255)
 	 * @param value the value of the operand, as a decimal (use more than one byte
@@ -37,7 +37,7 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 
 	/**
 	 * Get the JSON representation of the mask.
-	 * 
+	 *
 	 * @return JSON
 	 */
 	public JSONArray getJsonMask() {
@@ -46,7 +46,7 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 
 	/**
 	 * Get the JSON representation of the value.
-	 * 
+	 *
 	 * @return JSON
 	 */
 	public JSONArray getJsonValue() {
@@ -67,10 +67,7 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
 		OperandRepresentation other = (OperandRepresentation) obj;
@@ -89,6 +86,7 @@ public class OperandRepresentation implements Comparable<OperandRepresentation> 
 		return needleMasked.equals(this.value);
 	}
 
+	@Override
 	public String toString() {
 		return "{M:" + this.mask.toString() + ", V:" + this.value.toString() + "}";
 	}

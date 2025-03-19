@@ -1,10 +1,15 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
+import java.util.Objects;
+
 import org.json.JSONObject;
 
+/**
+ * A step that creates two branches in a pattern.
+ */
 public class Split extends Step {
 
 	private int dest1;
@@ -32,14 +37,6 @@ public class Split extends Step {
 		this.dest2 = dest2;
 	}
 
-	public void setDest1(int dest1) {
-		this.dest1 = dest1;
-	}
-
-	public void setDest2(int dest2) {
-		this.dest2 = dest2;
-	}
-
 	public int getDest1() {
 		return this.dest1;
 	}
@@ -64,5 +61,32 @@ public class Split extends Step {
 		if (this.dest2 >= threshold) {
 			this.dest2 += amount;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "SPLIT Dest1: " + this.dest1 + "; Dest2: " + this.dest2;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		// self check
+		if (this == o) {
+			return true;
+		}
+		// null check
+		// type check and cast
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		Split other = (Split) o;
+		// field comparison
+		return Objects.equals(this.stepType, other.stepType) && this.dest1 == other.dest1 &&
+			this.dest2 == other.dest2;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(stepType, dest1, dest2);
 	}
 }

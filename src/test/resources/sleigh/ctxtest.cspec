@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<compiler_spec>
+    <stackpointer register="DUMMY" space="dummy" growth="negative" />
+    <global>
+        <range space="ram"/>
+    </global>
+    <default_proto>
+        <prototype name="default" extrapop="unknown" stackshift="0">
+            <input></input>
+            <output></output>
+        </prototype>
+    </default_proto>
+</compiler_spec>

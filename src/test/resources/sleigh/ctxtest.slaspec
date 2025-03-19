@@ -1,0 +1,146 @@
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
+define endian=little;
+define alignment=2;
+
+define space ram type=ram_space size=4 default;
+define space register type=register_space size=4 wordsize=2;
+define space dummy type=ram_space size=4;
+
+define register offset=0x00 size=2 [R1 R2 R3 R4 DUMMY];
+
+# The eight byte context register
+define register offset=0x40 size=8 [contextreg];
+
+define token instr(16)
+    opcode = (8,15)
+    operand1 = (4,7)
+    operand2 = (0,3)
+    imm4 = (0,3)
+    simm4 = (0,3) signed
+;
+
+define token extnd(16)
+    imm16 = (0,15)
+;
+
+# The fields for the context register (Context variables).
+define context contextreg
+    ext = (32,35) noflow # Extended
+    off = (28,31) # Branch Offset
+    enc = (24,27) # Encoding number
+    mov = (20,23) # Index of register whose value was moved
+    set = (16,19) # Mode
+    cfg2 = (12,15) # Config bits
+    cfg1 = (8,11) # Config bits
+    cnt = (4,7) # Counter
+    chr = (0,3) # IO char count
+;
+
+attach variables [operand1 operand2] [R1 R2 R3 R4 _ _ _ _ _ _ _ _ _ _ _ _];
+
+define pcodeop read;
+
+
+# Global context change:
+# New context variable values are set starting at the following address
+:Alloc imm4 is opcode=0x00 & imm4 [chr = imm4; globalset(inst_next, chr);] {}
+
+# Local context change:
+# Context variables are only changed when operating on this instruction. 
+# Changes are undone after processing instruction, so they should not influence pattern beyond assembly
+:Read operand1 is opcode=0x01 & operand1 [chr = chr + 1;] { operand1 = read(); }
+
+# Context changes and non-terminal constructor:
+# Both parent and child constructors change a single context variable
+# The context changes should be applied preorder (Parent first)
+child: imm4 is imm4 [cnt = cnt + 1; globalset(inst_next, cnt);] { tmp:2 = imm4; export tmp; }
+
+:Load operand1, child is opcode=0x02 & operand1 & child [cnt = 1;] { operand1 = child; }
+
+# Global context changes at multiple addresses:
+# Changes to different context variables are committed starting at distinct addresses
+:Config is opcode=0x03 [cfg1 = 1; globalset(inst_start, cfg1); cfg2 = 1; globalset(inst_next, cfg2);] {}
+
+# Global context change from branch:
+# New context variable values are set starting at the address of the branch
+# This may pose challenges for keeping track of context changes during pattern compilation
+dest: reloc is simm4 [reloc = (simm4 * 2) + inst_next;] { export *[ram]:4 reloc; }
+
+:BranchS dest is opcode=0x04 & dest [set = 1; globalset(dest, set);] { goto dest; }
+
+:BranchU dest is opcode=0x05 & dest [set = 0; globalset(dest, set);] { goto dest; }
+
+# Global context change based on encoding:
+# Second operand is used to compute the global context change, but when it's wildcarded we don't know the value
+# This causes problems when computing global context changes at pattern compile time
+:Mov operand1, operand2 is opcode=0x06 & operand1 & operand2 [mov = operand2; globalset(inst_next, mov);] { operand1 = operand2; }
+
+# Ambiguous global context change with two encodings:
+# Two different encodings derived from the same instruction string produce different context variable values
+:Not operand1 is opcode=0x07 & operand1 [enc = 0; globalset(inst_next, enc);] { operand1 = ~operand1; }
+
+:Not operand2 is opcode=0x08 & operand2 [enc = 1; globalset(inst_next, enc);] { operand2 = ~operand2; }
+
+# Ambiguous global context change with three encodings:
+# Three different encodings derived from the same instruction string produce different context variable values
+:And operand1, operand2 is opcode=0x09 & operand1 & operand2 [enc = 0; globalset(inst_next, enc);] { operand1 = operand1 & operand2; }
+
+:And operand2, operand1 is opcode=0x0A & operand2 & operand1 [enc = 1; globalset(inst_next, enc);] { operand2 = operand2 & operand1; }
+
+:And operand1, operand2 is opcode=0x0B & operand1 & operand2 [enc = 2; globalset(inst_next, enc);] { local tmp = operand2 & operand1; operand1 = ~tmp;}
+
+# Ambiguous context validity:
+# Three different encodings with the same instruction string, each of which are only valid in certain contexts
+:Truncate operand1 is opcode=0x15 & operand1 & enc=0 { operand1 = operand1 & 0xF; }
+
+:Truncate operand1 is opcode=0x16 & operand1 & enc=1 { operand1 = operand1 & 0xFF; }
+
+:Truncate operand1 is opcode=0x17 & operand1 & enc=2 { operand1 = operand1 & 0xFFF; }
+
+# Ambiguous global context change from wildcard:
+# When the second operand of an Add instruction string is wildcarded, the global context change is ambiguous
+# We must fork the pattern in this case
+:Add operand1, operand2 is opcode=0x0C & operand1 & operand2 [set = 0; globalset(inst_next, set);] { operand1 = operand1 + operand2; }
+
+:Add operand1, imm4 is opcode=0x0D & operand1 & imm4 [set = 1; globalset(inst_next, set);] { operand1 = operand1 + imm4; }
+
+# Context-based branch:
+# If the immediate operand is wildcarded, we have to compute the context-based expression at search time
+destC: reloc is simm4 [off = 2; reloc = (simm4 * 2) + off + inst_next;] { export *[ram]:4 reloc; }
+
+:BranchC destC is opcode=0x0E & destC { goto destC; }
+
+# Context validity:
+# The first instruction is only valid in one context, and the second instruction is only valid in another
+# Each instruction assigns the context variable opposing values
+:Set is opcode=0x0F & set=0 [set = 1; globalset(inst_next, set);] {}
+
+:Unset is opcode=0x10 & set=1 [set = 0; globalset(inst_next, set);] {}
+
+# Ambiguous context validity:
+# Each encoding of the Shift instruction is only valid in a specific context
+# No information in the instruction string indicates which encoding it will resolve to
+:Shift operand1, operand2 is opcode=0x11 & operand1 & operand2 & set=0 { operand1 = operand1 << operand2; }
+
+:Shift operand1, operand2 is opcode=0x12 & operand1 & operand2 & set=1 { operand1 = operand1 >> operand2; }
+
+# Noflow global context change:
+# Global context change does not persist beyond the address immediately following Extend
+# LoadE is only valid in the context set by Extend, so Extend must precede it
+# The context change also prevents duplicate Extend instructions
+# This type of context change must be reverted accordingly at pattern compile time
+:Extend is opcode=0x13 & ext=0 [ext = 1; globalset(inst_next, ext);] {}
+
+:LoadE operand1, imm16 is opcode=0x14 & operand1 & ext=1 ; imm16 { operand1 = imm16; }
+
+# Noflow global context change:
+# ExtendX instruction has two encodings: one that sets a noflow context and one
+# that does not change context. LoadX also contains two encodings, with one valid
+# only when the noflow context is set and one valid when it is not set
+:ExtendX is opcode=0x18 & ext=0 [ext = 1; globalset(inst_next, ext);] {}
+
+:ExtendX is opcode=0x19 & ext=0 {}
+
+:LoadX operand1, imm16 is opcode=0x1A & operand1 & ext=0 ; imm16 { operand1 = imm16; }
+
+:LoadX operand1, imm16 is opcode=0x1B & operand1 & ext=1 ; imm16 { operand1 = imm16; }

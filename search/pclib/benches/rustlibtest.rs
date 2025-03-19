@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use bitvec::prelude::*;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -37,6 +37,19 @@ fn test_meta_pattern(
     let random_bytes: Vec<u8> = (0..2000).map(|_| rand::random::<u8>()).collect();
     // let random_bytes = vec![0u8; 1000];
     return pattern.run_patterns_data_automata(false, random_bytes.as_slice(), automata);
+}
+
+fn test_meta_pattern_new(file: &str) -> BTreeMap<String, Vec<Results>> {
+    let mut test_file = get_test_dir_path();
+    test_file.push(file);
+    // let pattern_data = fs::read(test_file.as_path()).unwrap();
+    // let pattern: Pattern = serde_json::from_slice(&pattern_data).unwrap();
+    let pattern: PatternMeta<Msb0> =
+        PatternMeta::load_pattern_meta(test_file.as_path().to_str().unwrap());
+
+    let random_bytes: Vec<u8> = (0..2000).map(|_| rand::random::<u8>()).collect();
+    // let random_bytes = vec![0u8; 1000];
+    return pattern.run_patterns_data(false, random_bytes.as_slice());
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -91,6 +104,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             })
         });
     }
+    group.bench_with_input(
+        BenchmarkId::new("pikevm_loop_ring_rc_priority", 0),
+        &pikevm_loop_ring_rc_priority::run_program::<Msb0, StatesRingRcRing<ThreadRc>>,
+        |b, _engine| {
+            b.iter(|| {
+                test_meta_pattern_new("../../../example_patterns/CVE-2019-3822/CVE-2019-3822.json")
+            })
+        },
+    );
 }
 
 criterion_group!(benches, criterion_benchmark);

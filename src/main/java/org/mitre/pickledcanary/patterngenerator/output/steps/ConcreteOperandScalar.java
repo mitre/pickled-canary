@@ -1,18 +1,20 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
+
+import java.util.Objects;
 
 import org.mitre.pickledcanary.patterngenerator.output.utils.BitArray;
 
 /**
  * Represents a variable that was a wildcard with the given var_id (e.g. Q1)
- * that has been found to have the concrete value of a scalar
+ * that has been found to have the concrete value of a scalar.
  */
 public class ConcreteOperandScalar extends ConcreteOperand {
 
-	private final String varId;
-	private final BitArray value;
+	private final String varId; // variable name (e.g. Q1)
+	private final BitArray value; // scalar value of varId
 
 	public ConcreteOperandScalar(String varId, BitArray value) {
 		super(ConcreteOperand.TypeOfOperand.Scalar);
@@ -38,24 +40,25 @@ public class ConcreteOperandScalar extends ConcreteOperand {
 		return out.toString();
 	}
 
-	public BitArray getValuePCBitArray() {
-		return this.value;
-	}
-
 	@Override
 	public String toString() {
 		return "{" + this.varId + "=" + this.value.toString() + "}";
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ConcreteOperandScalar)) {
+	public int hashCode() {
+		return Objects.hash(value, varId);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		ConcreteOperandScalar that = (ConcreteOperandScalar) o;
-		if (!this.value.equals(that.getValuePCBitArray())) {
-			return false;
-		}
-		return this.varId.equals(that.getVarId());
+		ConcreteOperandScalar other = (ConcreteOperandScalar) obj;
+		return Objects.equals(value, other.value) && Objects.equals(varId, other.varId);
 	}
 }

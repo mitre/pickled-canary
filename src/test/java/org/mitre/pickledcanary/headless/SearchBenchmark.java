@@ -1,13 +1,14 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
-package org.mitre.pickledcanary;
+package org.mitre.pickledcanary.headless;
 
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Assert;
+import org.mitre.pickledcanary.PickledCanary;
 import org.mitre.pickledcanary.search.Pattern;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
 
@@ -27,7 +28,7 @@ public class SearchBenchmark extends PickledCanaryTest {
 	@Before
 	public void setUp() throws Exception {
 		ProgramBuilder builder = new ProgramBuilder("arm_le_benchmark", "AARCH64:LE:64:AppleSilicon");
-		
+
 		int size = 0x1000*0x1000*0x4;
 
 		builder.setBytes(String.format("0x%08X", dataBase), new byte[size]);

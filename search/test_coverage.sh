@@ -13,10 +13,10 @@
 #
 # Must also be using a nightly Rust compiler
 
-# Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 
-RUSTFLAGS="-Z instrument-coverage" \
+RUSTFLAGS="-C instrument-coverage" \
     LLVM_PROFILE_FILE="mytest-%m.profraw" \
     cargo test --tests
 
@@ -25,7 +25,7 @@ cargo profdata -- merge -sparse $( for file in $( find . -name "*.profraw" ) ; d
 cargo cov -- export \
     $( for file in \
             $( \
-                      RUSTFLAGS="-Z instrument-coverage" \
+                      RUSTFLAGS="-C instrument-coverage" \
                                   cargo test --tests --no-run --message-format=json \
               | jq -r "select(.profile.test == true) | .filenames[]" \
               | grep -v dSYM - \

@@ -1,17 +1,18 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
+import java.util.Objects;
+
 /**
  * Represents a variable that was a wildcard with the given var_id (e.g. Q1)
- * that has been found to have the concrete register name name
- *
+ * that has been found to have the concrete register name.
  */
 public class ConcreteOperandField extends ConcreteOperand {
 
-	private final String varId;
-	private final String name;
+	private final String varId; // variable name (e.g. Q1)
+	private final String name; // register name value of varId
 
 	public ConcreteOperandField(String varId, String name) {
 		super(ConcreteOperand.TypeOfOperand.Field);
@@ -35,15 +36,19 @@ public class ConcreteOperandField extends ConcreteOperand {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ConcreteOperandField)) {
-			return false;
-		}
-		ConcreteOperandField that = (ConcreteOperandField) o;
-		if (!this.name.equals(that.getValue())) {
-			return false;
-		}
-		return this.varId.equals(that.getVarId());
+	public int hashCode() {
+		return Objects.hash(name, varId);
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		ConcreteOperandField other = (ConcreteOperandField) obj;
+		return Objects.equals(name, other.name) && Objects.equals(varId, other.varId);
+	}
 }

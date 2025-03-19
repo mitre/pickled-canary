@@ -13,7 +13,7 @@
 //! description of it's implementation. It is suggested to start with the
 //! simplest ([recursive_backtracking]) and work up in complexity from there.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 extern crate test;
 
@@ -30,6 +30,7 @@ pub mod pikevm_loop_ring_rc_priority;
 pub mod pikevm_ring;
 pub mod recursive_backtracking;
 pub mod recursive_backtracking_loop;
+pub mod resumable_vm;
 
 pub use pikevm_loop_ring_rc_priority::run_program;
 
@@ -55,6 +56,7 @@ mod tests {
             choices: vec![InstructionEncoding {
                 value: BitVec::<u8, Msb0>::from_slice(&[0xa2u8, 0x0, 0x55, 0x00]),
                 operands: vec![],
+                context: None,
             }],
         };
         // The following is kinda sorta like the following pseudo-regex:
@@ -916,5 +918,150 @@ mod tests {
         ];
 
         expression_tester_helper(prog_json.into(), &input_bytes.as_slice().into(), 0x0c);
+    }
+
+    #[test]
+    fn test_expression_with_context() {
+        let prog_json: j::Pattern = serde_json::from_str(
+            r##"{"tables":[],
+  "steps": [
+    {
+      "data": [
+        {
+          "type": "MaskAndChoose",
+          "choices": [
+            {
+              "operands": [
+                {
+                  "expression": {
+                    "op": "Add",
+                    "children": {
+                      "left": {
+                        "op": "Add",
+                        "children": {
+                          "left": {
+                            "op": "Mult",
+                            "children": {
+                              "left": {
+                                "op": "OperandValue",
+                                "offset": 0,
+                                "child": {
+                                  "op": "TokenField",
+                                  "value": {
+                                    "bitend": 3,
+                                    "shift": 0,
+                                    "signbit": true,
+                                    "bitstart": 0,
+                                    "byteend": 0,
+                                    "bigendian": false,
+                                    "bytestart": 0
+                                  }
+                                }
+                              },
+                              "right": { "op": "ConstantValue", "value": 2 }
+                            }
+                          },
+                          "right": {
+                            "op": "ContextField",
+                            "value": {
+                              "bitend": 31,
+                              "shift": 0,
+                              "signbit": false,
+                              "bitstart": 28,
+                              "byteend": 3,
+                              "bytestart": 3
+                            }
+                          }
+                        }
+                      },
+                      "right": { "op": "EndInstructionValue" }
+                    }
+                  },
+                  "var_id": ":Q1",
+                  "type": "Scalar",
+                  "mask": [15, 0]
+                }
+              ],
+              "context": [2, 0],
+              "value": [0, 14]
+            }
+          ],
+          "mask": [0, 255]
+        }
+      ],
+      "type": "LOOKUP"
+    },
+    {
+      "note": "AnyBytesNode Start: 0 End: 4 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,4}`",
+      "min": 0,
+      "max": 4,
+      "interval": 1,
+      "type": "ANYBYTESEQUENCE"
+    },
+    { "type": "LABEL", "value": "Q1" },
+    {
+      "data": [
+        {
+          "type": "MaskAndChoose",
+          "choices": [{ "operands": [], "value": [0, 12] }],
+          "mask": [255, 255]
+        }
+      ],
+      "type": "LOOKUP"
+    }
+  ]
+}
+"##,
+        ).unwrap();
+
+        let input_bytes = [
+            0x00, 0x0C, // Add R1, R1
+            0x00, 0x11, // Shift R1, R1
+            0x00, 0x0D, // Add R1, 0x0
+            0x00, 0x12, // Shift R1, R1
+            0x00, 0x0E, // BranchC 0xC
+            0x00, 0x11, // Shift R1, R1
+            0x00, 0x0C, // Add R1, R1
+            0x00, 0x0F, // Set
+            0x00, 0x10, // Unset
+            0x00, 0x0F, // Set
+            0x00, 0x10, // Unset
+            0x00, 0x11, // Shift R1, R1
+            0x00, 0x0F, // Set
+            0x00, 0x12, // Shift R1, R1
+            0x00, 0x13, // Extend
+            0x00, 0x14, 0xAA, 0xAA, // LoadE R1, 0xaaaa
+            0x00, 0x13, // Extend
+            0x00, 0x14, 0xBB, 0xBB, // LoadE R1, 0xbbbb
+        ];
+
+        let mut prog: Pattern<Msb0> = prog_json.into();
+        prog.prepend(&Pattern::<Msb0>::get_dot_star());
+        prog.append(&Pattern::<Msb0> {
+            steps: vec![Op::Match { match_number: 1 }],
+            tables: vec![],
+        });
+
+        for method in [
+            pikevm::run_program,
+            pikevm_ring::run_program,
+            pikevm_loop::run_program,
+            pikevm_loop_ring::run_program,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRc<ThreadRc>>,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRcFixed<ThreadRc, 50, 10>>,
+            pikevm_loop_ring_rc_priority::run_program::<
+                Msb0,
+                StatesRingRcFixedRing<ThreadRc, 50, 50>,
+            >,
+            recursive_backtracking::run_program,
+            recursive_backtracking_loop::run_program,
+        ] {
+            let results = method(10, &prog, &input_bytes.as_slice().into());
+            assert!(results.matched, "Should have matched!");
+            assert!(results.saved.is_some(), "Should have some saved data");
+            let saved = results.saved.unwrap();
+            assert!(saved.labels.contains_key("Q1"), "Should have a label 'Q1'");
+            assert_eq!(*saved.labels.get("Q1").unwrap(), 12);
+        }
     }
 }

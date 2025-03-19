@@ -20,7 +20,7 @@ package org.mitre.pickledcanary.searchInterface;
  * Based on Ghidra's sample SampleSearchTableModel. 
  */
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import ghidra.docking.settings.Settings;
 import ghidra.framework.plugintool.PluginTool;

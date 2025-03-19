@@ -1,3 +1,4 @@
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 use crate::saved_data_reader::SavedDataReader;
 use std::convert::TryFrom;
 use treesearchlib::automata::Results;

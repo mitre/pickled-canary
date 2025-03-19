@@ -1,11 +1,14 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use bitvec::prelude::*;
 use memmap2::MmapOptions;
+use pikevm_loop_ring_rc_priority::PikevmLoopRingRcPriority;
+use states::StatesRc;
 use std::convert::TryInto;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
+use treesearchlib::automata::resumable_vm::ResumableVm;
 use treesearchlib::automata::thread::ThreadRc;
 use treesearchlib::automata::*;
 use treesearchlib::b::Op;
@@ -97,21 +100,56 @@ pub fn run_pattern<Endian: BitOrder + Clone + PartialEq>(
     run_pattern_data(short_circuit, data_vec, program, quiet_level)
 }
 
+fn run_pattern_data_generic<
+    Endian: BitOrder + Clone + PartialEq,
+    State: StatesRc<ThreadRc>,
+    VM: ResumableVm<Endian, State>,
+>(
+    _short_circuit: bool,
+    data_vec: &[u8],
+    program: &BitPattern<Endian>,
+    quiet_level: u64,
+) -> Vec<Results> {
+    let mut vm = VM::new(program.clone(), 500);
+
+    let input = &AddressedBits::new(data_vec, 0);
+    vm.start(input);
+    let mut results = vec![];
+    loop {
+        let result = vm.search(input);
+
+        if result.matched {
+            if quiet_level == 0 {
+                // If we're not trying to be quiet... print the whole result
+                println!("{:#?}", result);
+            }
+            results.push(result);
+        } else {
+            break;
+        }
+    }
+    results
+}
+
+/// Runs pattern finding all results, including overlapping results. Results are
+/// returned in the order they were found (e.g. which matches completed first,
+/// not which ones started first)
 pub fn run_pattern_data<Endian: BitOrder + Clone + PartialEq>(
     short_circuit: bool,
     data_vec: &[u8],
     program: &BitPattern<Endian>,
     quiet_level: u64,
 ) -> Vec<Results> {
-    run_pattern_data_automata(
-        short_circuit,
-        data_vec,
-        program,
-        quiet_level,
-        run_program::<Endian, states::StatesRingRcRing<ThreadRc>>,
-    )
+    run_pattern_data_generic::<
+        Endian,
+        states::StatesRingRcRing<ThreadRc>,
+        PikevmLoopRingRcPriority<Endian, states::StatesRingRcRing<ThreadRc>>,
+    >(short_circuit, data_vec, program, quiet_level)
 }
 
+/// WARNING: This fails to find overlapping search results. Searching resumes at
+/// the byte after the start of the previous match. Use [run_pattern_data]
+/// instead.
 pub fn run_pattern_data_automata<Endian: BitOrder + Clone + PartialEq>(
     short_circuit: bool,
     data_vec: &[u8],
@@ -735,5 +773,387 @@ mod tests {
                 count
             );
         }
+    }
+    /// The following is this pattern compiled:
+    // ldr r3, [`:foo`]
+    // `ANY_BYTES{8,8}`
+    // `foo:`
+    // `ANY_BYTES{1,1}`
+    const ARM_LDR_PTN: &str = r##"{
+        "tables": [],
+        "steps": [
+          {"data":[{"type":"MaskAndChoose","choices":[{"operands":[{"expression":{"op":"Sub","children":{"left":{"op":"Add","children":{"left":{"op":"StartInstructionValue"},"right":{"op":"ConstantValue","value":8}}},"right":{"op":"OperandValue","offset":0,"child":{"op":"TokenField","value":{"bitend":11,"shift":0,"signbit":false,"bitstart":0,"byteend":1,"bigendian":false,"bytestart":0}}}}},"var_id":":foo","type":"Scalar","mask":[255,15,0,0]}],"value":[0,48,31,229]},{"operands":[{"expression":{"op":"Add","children":{"left":{"op":"Add","children":{"left":{"op":"StartInstructionValue"},"right":{"op":"ConstantValue","value":8}}},"right":{"op":"OperandValue","offset":0,"child":{"op":"TokenField","value":{"bitend":11,"shift":0,"signbit":false,"bitstart":0,"byteend":1,"bigendian":false,"bytestart":0}}}}},"var_id":":foo","type":"Scalar","mask":[255,15,0,0]}],"value":[0,48,159,229]}],"mask":[0,240,255,255]}],"type":"LOOKUP"},{"note":"AnyBytesNode Start: 8 End: 8 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{8,8}`","min":8,"max":8,"interval":1,"type":"ANYBYTESEQUENCE"},{"type":"LABEL","value":"foo"},{"note":"AnyBytesNode Start: 1 End: 1 Interval: 1 From: Token from line #4: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{1,1}`","min":1,"max":1,"interval":1,"type":"ANYBYTESEQUENCE"}
+        ],
+        "compile_info": [
+          {
+            "compiled_using_binary": [
+              {
+                "path": ["unknown"],
+                "compiled_at_address": ["01008420"],
+                "md5": ["unknown"]
+              }
+            ],
+            "language_id": ["ARM:LE:32:v8"]
+          }
+        ],
+        "pattern_metadata": {}
+      }
+      "##;
+
+    // the following is:
+    // the following is:
+    // ldr r3,[pc,#4]
+    // mov r0,r0
+    // mov r0,r0
+    // mov r0,r0 // <--- ldr points here
+    // mov r0,r0
+    const ARM_LDR_DATA: [u8; 20] = [
+        0x04, 0x30, 0x9f, 0xe5, 0x00, 0x00, 0xa0, 0xe1, 0x00, 0x00, 0xa0, 0xe1, 0x00, 0x00, 0xa0,
+        0xe1, 0x00, 0x00, 0xa0, 0xe1,
+    ];
+
+    #[test]
+    fn test_ldr_label() {
+        let prog =
+            load_pattern_from_data::<Msb0>(&CString::new(ARM_LDR_PTN).unwrap().into_bytes(), 3);
+
+        let prog = wrap_pattern(prog);
+
+        for (count, method) in [
+            pikevm::run_program,
+            pikevm_ring::run_program,
+            pikevm_loop::run_program,
+            pikevm_loop_ring::run_program,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRc<ThreadRc>>,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRcFixed<ThreadRc, 50, 50>>,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRcFixedUnique<ThreadRc, 50, 50>>,
+            pikevm_loop_ring_rc_priority::run_program::<Msb0, StatesRingRcRing<ThreadRc>>,
+            pikevm_loop_ring_rc_priority::run_program::<
+                Msb0,
+                StatesRingRcFixedRing<ThreadRc, 50, 50>,
+            >,
+            // recursive_backtracking::run_program,
+            // recursive_backtracking_loop::run_program,
+        ]
+        .iter()
+        .enumerate()
+        {
+            let results = run_pattern_data_automata(false, &ARM_LDR_DATA, &prog, 0, *method);
+
+            assert_eq!(
+                results.len(),
+                1,
+                "Go unexpected number of results on loop: {}",
+                count
+            );
+            assert_eq!(
+                *(results[0]
+                    .saved
+                    .as_ref()
+                    .unwrap()
+                    .labels
+                    .get("foo")
+                    .unwrap()),
+                12
+            );
+
+            let results = run_pattern_data_automata(false, &ARM_TWO_LDR_DATA, &prog, 0, *method);
+            assert_eq!(
+                results.len(),
+                2,
+                "Go unexpected number of results on loop: {}",
+                count
+            );
+            assert_eq!(
+                *(results[0]
+                    .saved
+                    .as_ref()
+                    .unwrap()
+                    .labels
+                    .get("foo")
+                    .unwrap()),
+                12
+            );
+        }
+
+        let results = run_pattern_data(false, &ARM_LDR_DATA, &prog, 0);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            *(results[0]
+                .saved
+                .as_ref()
+                .unwrap()
+                .labels
+                .get("foo")
+                .unwrap()),
+            12
+        );
+    }
+
+    /// The following is this pattern compiled:
+    /// "b `:foobar`
+    /// `ANY_BYTES{0,8}`
+    /// `foobar:`
+    /// cpy r0,r0";
+    const ARM_OVERLAPPING_PTN: &str = r##"{
+  "tables": [],
+  "steps": [
+    {
+      "data": [
+        {
+          "type": "MaskAndChoose",
+          "choices": [
+            {
+              "operands": [
+                {
+                  "expression": {
+                    "op": "Add",
+                    "children": {
+                      "left": {
+                        "op": "Add",
+                        "children": {
+                          "left": { "op": "EndInstructionValue" },
+                          "right": { "op": "ConstantValue", "value": 4 }
+                        }
+                      },
+                      "right": {
+                        "op": "Mult",
+                        "children": {
+                          "left": { "op": "ConstantValue", "value": 4 },
+                          "right": {
+                            "op": "OperandValue",
+                            "offset": 0,
+                            "child": {
+                              "op": "TokenField",
+                              "value": {
+                                "bitend": 23,
+                                "shift": 0,
+                                "signbit": true,
+                                "bitstart": 0,
+                                "byteend": 2,
+                                "bigendian": false,
+                                "bytestart": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "var_id": ":foobar",
+                  "type": "Scalar",
+                  "mask": [255, 255, 255, 0]
+                }
+              ],
+              "value": [0, 0, 0, 234]
+            }
+          ],
+          "mask": [0, 0, 0, 255]
+        }
+      ],
+      "type": "LOOKUP"
+    },
+    {
+      "note": "AnyBytesNode Start: 0 End: 8 Interval: 1 From: Token from line #2: Token type: PICKLED_CANARY_COMMAND data: `ANY_BYTES{0,8}`",
+      "min": 0,
+      "max": 8,
+      "interval": 1,
+      "type": "ANYBYTESEQUENCE"
+    },
+    { "type": "LABEL", "value": "foobar" },
+    {
+      "data": [
+        {
+          "type": "MaskAndChoose",
+          "choices": [{ "operands": [], "value": [0, 0, 160, 225] }],
+          "mask": [255, 255, 255, 255]
+        }
+      ],
+      "type": "LOOKUP"
+    }
+  ],
+  "compile_info": [
+    {
+      "compiled_using_binary": [
+        {
+          "path": ["unknown"],
+          "compiled_at_address": ["01008420"],
+          "md5": ["unknown"]
+        }
+      ],
+      "language_id": ["ARM:LE:32:v8"]
+    }
+  ],
+  "pattern_metadata": {}
+}
+"##;
+
+    // the following is:
+    // b foo
+    // 0x00000000
+    // 0x00000000
+    // foo:
+    // cpy r0,r0
+
+    const ARM_SIMPLE_BRANCH_WITH_LABEL: [u8; 16] = [
+        0x01, 0x00, 0x00, 0xea, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa0,
+        0xe1,
+    ];
+
+    #[test]
+    fn test_b_label_results() {
+        let prog = load_pattern_from_data::<Msb0>(
+            &CString::new(ARM_OVERLAPPING_PTN).unwrap().into_bytes(),
+            3,
+        );
+
+        let prog = wrap_pattern(prog);
+
+        let results = run_pattern_data(false, &ARM_SIMPLE_BRANCH_WITH_LABEL, &prog, 0);
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            *results[0]
+                .saved
+                .as_ref()
+                .unwrap()
+                .labels
+                .get("foobar")
+                .unwrap(),
+            12
+        )
+    }
+
+    // the following is:
+    // b foo
+    // 0x00000000
+    // cpy r0,r0
+    // foo:
+    // 0x00000000
+
+    const ARM_SIMPLE_BRANCH_WITH_BAD_LABEL: [u8; 16] = [
+        0x01, 0x00, 0x00, 0xea, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa0, 0xe1, 0x00, 0x00, 0x00,
+        0x00,
+    ];
+
+    #[test]
+    fn test_b_misaligned_label_results() {
+        let prog = load_pattern_from_data::<Msb0>(
+            &CString::new(ARM_OVERLAPPING_PTN).unwrap().into_bytes(),
+            3,
+        );
+
+        let prog = wrap_pattern(prog);
+
+        let results = run_pattern_data(false, &ARM_SIMPLE_BRANCH_WITH_BAD_LABEL, &prog, 0);
+
+        assert_eq!(results.len(), 0);
+
+        for (count, method) in [
+            pikevm::run_program,
+            pikevm_ring::run_program,
+            pikevm_loop::run_program,
+            pikevm_loop_ring::run_program,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRc<ThreadRc>>,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRcFixed<ThreadRc, 50, 50>>,
+            pikevm_loop_ring_rc::run_program::<Msb0, StatesRingRcFixedUnique<ThreadRc, 50, 50>>,
+            pikevm_loop_ring_rc_priority::run_program::<Msb0, StatesRingRcRing<ThreadRc>>,
+            pikevm_loop_ring_rc_priority::run_program::<
+                Msb0,
+                StatesRingRcFixedRing<ThreadRc, 50, 50>,
+            >,
+            // recursive_backtracking::run_program,
+            // recursive_backtracking_loop::run_program,
+        ]
+        .iter()
+        .enumerate()
+        {
+            let results = run_pattern_data_automata(
+                false,
+                &ARM_SIMPLE_BRANCH_WITH_BAD_LABEL,
+                &prog,
+                0,
+                *method,
+            );
+
+            assert_eq!(
+                results.len(),
+                0,
+                "Go unexpected number of results on loop: {}",
+                count
+            );
+        }
+    }
+
+    // the following is:
+    // b foo
+    // b bar
+    // bar:
+    // cpy r0,r0
+    // foo:
+    // cpy r0,r0
+
+    const ARM_OVERLAPPING_DATA: [u8; 16] = [
+        0x01, 0x00, 0x00, 0xea, 0xff, 0xff, 0xff, 0xea, 0x00, 0x00, 0xa0, 0xe1, 0x00, 0x00, 0xa0,
+        0xe1,
+    ];
+
+    #[test]
+    fn test_overlapping_results() {
+        let prog = load_pattern_from_data::<Msb0>(
+            &CString::new(ARM_OVERLAPPING_PTN).unwrap().into_bytes(),
+            3,
+        );
+
+        let prog = wrap_pattern(prog);
+
+        let results = run_pattern_data(false, &ARM_OVERLAPPING_DATA, &prog, 0);
+
+        assert_eq!(results.len(), 2);
+    }
+
+    // the following is:
+    // the following is:
+    // ldr r3,[pc,#4]
+    // ldr r3,[pc,#4]
+    // mov r0,r0
+    // mov r0,r0 // <--- first ldr points here
+    // mov r0,r0 // <--- second ldr points here
+    const ARM_TWO_LDR_DATA: [u8; 20] = [
+        0x04, 0x30, 0x9f, 0xe5, 0x04, 0x30, 0x9f, 0xe5, 0x00, 0x00, 0xa0, 0xe1, 0x00, 0x00, 0xa0,
+        0xe1, 0x00, 0x00, 0xa0, 0xe1,
+    ];
+
+    #[test]
+    fn test_ldr_two_label() {
+        let prog =
+            load_pattern_from_data::<Msb0>(&CString::new(ARM_LDR_PTN).unwrap().into_bytes(), 3);
+
+        let prog = wrap_pattern(prog);
+
+        let results = run_pattern_data(false, &ARM_TWO_LDR_DATA, &prog, 0);
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(
+            *(results[0]
+                .saved
+                .as_ref()
+                .unwrap()
+                .labels
+                .get("foo")
+                .unwrap()),
+            12
+        );
+        assert_eq!(
+            *(results[1]
+                .saved
+                .as_ref()
+                .unwrap()
+                .labels
+                .get("foo")
+                .unwrap()),
+            16
+        );
     }
 }

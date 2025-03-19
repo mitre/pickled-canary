@@ -1,0 +1,35 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+.gitignore text
+LICENSE text
+*.cspec text
+*.g4 text
+*.gradle text
+*.html text
+*.in text
+*.iro text
+*.java text
+*.json text
+*.ldefs text
+*.lock text
+*.manifest text
+*.md text
+*.properties text
+*.pspec text
+*.ptn text
+*.py text
+*.rs text
+*.sh text eol=lf
+*.slaspec text
+*.toml text
+*.tool text
+*.txt text
+*.xml text
+*.yml text
+
+# Denote all files that are truly binary and should not be modified.
+*.jar binary
+*.png binary

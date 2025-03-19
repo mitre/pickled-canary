@@ -19,7 +19,7 @@ package org.mitre.pickledcanary.searchInterface;
  * Based on Ghidra's sample SampleSearchTablePlugin. 
  */
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import docking.ActionContext;
 import docking.action.DockingAction;
@@ -46,8 +46,7 @@ import ghidra.app.CorePluginPackage;
 )
 //@formatter:on
 /**
- * This plugin provides a menu entry under "Search" to launch the Pickled Canary
- * search window
+ * This plugin provides a menu entry under "Search" to launch the Pickled Canary search window
  */
 public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 
@@ -86,7 +85,8 @@ public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 				return currentProgram != null;
 			}
 		};
-		action.setMenuBarData(new MenuData(new String[] { "Search", "Pickled Canary Pattern" }, "MyGroup"));
+		action.setMenuBarData(
+			new MenuData(new String[] { "Search", "Pickled Canary Pattern" }, "MyGroup"));
 		tool.addAction(action);
 	}
 
@@ -100,15 +100,18 @@ public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 				if (instruction != null) {
 					initialValue = new StringBuilder(instruction.toString());
 				}
-			} else if (this.lastAction == LastActionType.SELECTION && currentSelectionLocal != null) {
-				for (Instruction i : listing.getInstructions(this.currentSelectionLocal, true)) {
+			}
+			// Pre-populate the search field with the selected bytes if less than 0x100 bytes are
+			// selected
+			else if (this.lastAction == LastActionType.SELECTION && currentSelectionLocal != null &&
+				this.currentSelectionLocal.getNumAddresses() < 0x100) {
+				for (Instruction i : listing.getInstructions(this.currentSelectionLocal,
+					true)) {
 					initialValue.append(i.toString()).append("\n");
 				}
 			}
-
 		}
 		provider = new PickledCanarySearchTableProvider(this, initialValue.toString());
-//		tool.addComponentProvider(provider, true);
 	}
 
 	@Override
@@ -116,6 +119,9 @@ public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 		if (loc != null) {
 			this.currentAddressLocal = loc.getAddress();
 			this.lastAction = LastActionType.ADDRESS;
+			if (this.provider != null) {
+				provider.updateContextInfo();
+			}
 		}
 	}
 
@@ -125,5 +131,9 @@ public class PickledCanarySearchTablePlugin extends ProgramPlugin {
 			this.currentSelectionLocal = selection;
 			this.lastAction = LastActionType.SELECTION;
 		}
+	}
+
+	protected Address getCurrentAddress() {
+		return this.currentAddressLocal;
 	}
 }

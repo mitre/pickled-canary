@@ -1,7 +1,7 @@
 // Pickled Canary script to compile an assembly pattern into a compiled pattern.
 // @author MITRE
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import java.io.File;
 import java.io.FileWriter;

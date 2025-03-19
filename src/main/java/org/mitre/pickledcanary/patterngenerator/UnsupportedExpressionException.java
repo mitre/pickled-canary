@@ -1,3 +1,4 @@
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 package org.mitre.pickledcanary.patterngenerator;
 
 import ghidra.app.plugin.processors.sleigh.expression.BinaryExpression;
@@ -8,7 +9,9 @@ import ghidra.app.plugin.processors.sleigh.expression.UnaryExpression;
  * Thrown when a passed expression could not be converted into a Picked Canary pattern.
  */
 public class UnsupportedExpressionException extends RuntimeException {
-    public UnsupportedExpressionException(PatternExpression expression) {
+	private static final long serialVersionUID = 4185835652675628001L;
+
+	public UnsupportedExpressionException(PatternExpression expression) {
         super("Unsupported expression type: " + expression);
     }
 

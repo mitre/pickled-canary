@@ -24,4 +24,4 @@ ADD `*`,EAX
 ADD `Q2`,0x2
 MOV `*`,`Q2`
 
-; Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+; Copyright (C) 2025 The MITRE Corporation All Rights Reserved

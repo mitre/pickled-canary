@@ -1,10 +1,10 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.search;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -18,7 +18,7 @@ public class PikevmStates {
 	private int startIdx;
 
 	public PikevmStates() {
-		this.inner = new ArrayList<>();
+		this.inner = new LinkedList<>();
 		this.startIdx = 0;
 	}
 
@@ -43,6 +43,8 @@ public class PikevmStates {
 	public PikevmThread getNextThread(int sp) {
 		int spIndex = sp - this.startIdx;
 		if (spIndex >= this.inner.size()) {
+			this.inner.clear();
+			this.startIdx = sp;
 			return null;
 		}
 		
@@ -55,7 +57,4 @@ public class PikevmStates {
 		
 		return out;
 	}
-
-	// TODO: implement cleanup of old lists (e.g. remove them and increment
-	// start_idx)
 }

@@ -1,11 +1,11 @@
-# Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 from setuptools import setup
 from setuptools_rust import Binding, RustExtension
 
 setup(
     name="Pickled-Canary",
-    version="0.3.0",
+    version="0.4.0",
     rust_extensions=[RustExtension("pickled_canary.pickled_canary_lib", binding=Binding.NoBinding, path="pclib/Cargo.toml")],
     packages=["pickled_canary"],
     # rust extensions are not zip safe, just like C-extensions.

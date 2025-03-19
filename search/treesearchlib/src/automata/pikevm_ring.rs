@@ -4,7 +4,7 @@
 //!
 //! The another improvement is found in [crate::automata::pikevm_loop]
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::clone::Clone;
 extern crate test;

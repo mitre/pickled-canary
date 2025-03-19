@@ -1,7 +1,8 @@
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 [package]
 name = "pclib"
 authors = ["Peter <plucia@mitre.org>"]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2018"
 license-file = "LICENSE.txt"
 

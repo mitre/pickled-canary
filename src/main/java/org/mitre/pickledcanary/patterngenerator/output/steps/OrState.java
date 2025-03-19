@@ -1,8 +1,11 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
+/**
+ * A construct that allows a pattern to have two branches.
+ */
 public class OrState {
 
 	/**

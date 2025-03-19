@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -130,7 +130,11 @@ impl<Endian: BitOrder + Clone + std::fmt::Debug + PartialEq> PatternMeta<Endian>
         let results = core::run_pattern_data(short_circuit, data_vec, mega_pattern, 1);
         self.format_results(results)
     }
+
     #[allow(dead_code)]
+    /// WARNING This fails to find overlapping search results. Searching resumes
+    /// at the byte after the start of the previous match. Use
+    /// [PatternMeta::run_patterns_data] instead
     pub fn run_patterns_data_automata(
         &self,
         short_circuit: bool,

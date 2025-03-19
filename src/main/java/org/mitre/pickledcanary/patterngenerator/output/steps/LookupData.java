@@ -1,12 +1,14 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,10 +21,9 @@ import org.mitre.pickledcanary.util.PCBytes;
 import ghidra.program.model.mem.MemBuffer;
 
 /**
- *
- * @param choices
- *            map from value after opcode mask to concrete instruction encodings
- * @param mask
+ * Holds encodings for a given mask of an assembly instruction.
+ * @param mask the mask for the assembly encodings
+ * @param choices map from value after opcode mask to concrete instruction encodings
  */
 public record LookupData(
 		byte[] mask,
@@ -44,14 +45,27 @@ public record LookupData(
 		choices.put(new ByteArrayWrapper(value), ie);
 	}
 
+	@Override
+	public void combine(Data that) {
+		if (that instanceof LookupData other) {
+			assert Arrays.equals(mask, other.mask);
+
+			for (ByteArrayWrapper choice : other.choices.keySet()) {
+				choices.put(choice, other.choices.get(choice));
+			}
+		}
+	}
+
+	@Override
 	public void resolveTableIds(AllLookupTables tables) {
 		for (InstructionEncoding ie : choices.values()) {
 			ie.resolveTableIds(tables);
 		}
 	}
 
+	@Override
 	public JSONObject getJson() {
-		List<InstructionEncoding> sorted = new ArrayList<InstructionEncoding>(choices.values());
+		List<InstructionEncoding> sorted = new ArrayList<>(choices.values());
 		Collections.sort(sorted);
 
 		JSONArray arr = new JSONArray();
@@ -67,6 +81,7 @@ public record LookupData(
 		return out;
 	}
 
+	@Override
 	public LookupResults doLookup(MemBuffer input, int sp, List<LookupTable> tables) {
 		byte[] data = new byte[this.mask.length];
 
@@ -107,7 +122,7 @@ public record LookupData(
 							// to be a computed expression resulting in an
 							// address (represented as an SP value)
 							long x = LookupDataExpressionSolver.computeExpression(
-								oo.getExpression(), input, sp,
+								oo.getExpression(), input, ie.getContext(), sp,
 								this.mask.length);
 							out = new ConcreteOperandAddress(oo.varId.substring(1), x);
 						}
@@ -128,6 +143,7 @@ public record LookupData(
 		return null;
 	}
 
+	@Override
 	public SavedData doCheck(LookupResults toCheck, SavedData existing) {
 		SavedData localSaved = new SavedData(existing);
 		for (ConcreteOperand o : toCheck.getOperands()) {
@@ -138,6 +154,7 @@ public record LookupData(
 		return localSaved;
 	}
 
+	@Override
 	public LookupAndCheckResult doLookupAndCheck(MemBuffer input, int sp, List<LookupTable> tables,
 			SavedData existing) {
 		LookupResults result = this.doLookup(input, sp, tables);
@@ -166,5 +183,31 @@ public record LookupData(
 			maskedData[i] &= maskParam[i];
 		}
 		return maskedData;
+	}
+
+	@Override
+	public String toString() {
+		return "LookupData[mask=" + new ByteArrayWrapper(this.mask) + ", choices=" +  this.choices.toString() + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 23;
+		result = prime * result + Arrays.hashCode(mask);
+		result = prime * result + Objects.hash(choices);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		LookupData other = (LookupData) obj;
+		return Objects.equals(choices, other.choices) && Arrays.equals(mask, other.mask);
 	}
 }

@@ -1,12 +1,11 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 /**
  * Represents a variable that was a wildcard with the given var_id (e.g. Q1)
- * that has been found to have a concrete value (register name or scalar value)
- *
+ * that has been found to have a concrete value (register name or scalar value).
  */
 public abstract class ConcreteOperand {
 
@@ -24,6 +23,7 @@ public abstract class ConcreteOperand {
 
 	public abstract String getValue();
 
+	@Override
 	public abstract String toString();
 
 	public TypeOfOperand getType() {
@@ -32,4 +32,7 @@ public abstract class ConcreteOperand {
 
 	@Override
 	public abstract boolean equals(Object o);
+
+	@Override
+	public abstract int hashCode();
 }

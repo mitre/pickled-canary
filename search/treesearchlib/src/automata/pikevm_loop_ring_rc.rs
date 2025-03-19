@@ -8,7 +8,7 @@
 //! The next improvement is in
 //! [pikevm_loop_ring_rc_fixed](crate::automata::pikevm_loop_ring_rc_fixed)
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::rc::Rc;
 use core::clone::Clone;
@@ -117,10 +117,17 @@ pub fn process_thread_rc<Endian: BitOrder + Clone + PartialEq, S: StatesRc<Threa
                 pc += 1;
             }
             Op::Label { value } => {
-                Rc::make_mut(saved).labels.insert(
-                    value.clone(),
-                    TryInto::<i128>::try_into(sp).unwrap() + i128::from(input.get_base_address()),
-                );
+                let this_label_value =
+                    TryInto::<i128>::try_into(sp).unwrap() + i128::from(input.get_base_address());
+                if let Some(existing_value) = saved.labels.get(&value.clone()) {
+                    if *existing_value != this_label_value {
+                        break;
+                    }
+                } else {
+                    Rc::make_mut(saved)
+                        .labels
+                        .insert(value.clone(), this_label_value);
+                }
                 pc += 1;
             }
             Op::AnyByte => {

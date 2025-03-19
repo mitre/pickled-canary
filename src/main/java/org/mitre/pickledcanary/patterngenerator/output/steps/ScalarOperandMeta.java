@@ -1,11 +1,14 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.json.JSONObject;
+import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 import ghidra.app.plugin.processors.sleigh.expression.AndExpression;
 import ghidra.app.plugin.processors.sleigh.expression.BinaryExpression;
@@ -30,14 +33,12 @@ import ghidra.app.plugin.processors.sleigh.expression.XorExpression;
 import ghidra.app.plugin.processors.sleigh.symbol.OperandSymbol;
 import ghidra.app.plugin.processors.sleigh.symbol.TripleSymbol;
 import ghidra.program.model.mem.MemoryAccessException;
-import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
-import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 /**
  * Represents a scalar operand choice for a wildcard in the output json.
  */
 public class ScalarOperandMeta extends OperandMeta {
-	
+
 	public static final String JSON_KEY_OP = "op";
 	public static final String JSON_KEY_VALUE = "value";
 	public static final String JSON_KEY_LEFT = "left";
@@ -50,7 +51,7 @@ public class ScalarOperandMeta extends OperandMeta {
 
 	/**
 	 * Scalar operand type
-	 * 
+	 *
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
 	 */
@@ -148,8 +149,9 @@ public class ScalarOperandMeta extends OperandMeta {
 		} else {
 			int i = sym.getOffsetBase();
 			int offset = 0;
-			if (i < 0)
+			if (i < 0) {
 				offset = sym.getRelativeOffset();
+			}
 
 			out.put(JSON_KEY_OP, "OperandValue");
 			out.put(JSON_KEY_OFFSET, offset);
@@ -184,10 +186,10 @@ public class ScalarOperandMeta extends OperandMeta {
 		out.put("expression", expressionToJson(this.expression));
 		return out;
 	}
-	
+
 	protected static JSONObject binaryExpressionToJson(BinaryExpression binary) {
 		JSONObject out = new JSONObject();
-		
+
 		JSONObject children = new JSONObject();
 		children.put(JSON_KEY_LEFT, expressionToJson(binary.getLeft()));
 		children.put(JSON_KEY_RIGHT, expressionToJson(binary.getRight()));
@@ -214,7 +216,7 @@ public class ScalarOperandMeta extends OperandMeta {
 		} else {
 			throw new UnsupportedExpressionException(binary);
 		}
-		
+
 		return out;
 	}
 
@@ -231,5 +233,78 @@ public class ScalarOperandMeta extends OperandMeta {
 		}
 
 		return out;
+	}
+
+	public boolean hasContext() {
+		return walkExpression(this.expression);
+	}
+
+	// Detect if at least one ContextField exists in expression
+	// TODO: Is there a decent way to make this logic reusable?
+	// It's very similar to expressionToJson()
+	protected boolean walkExpression(PatternExpression expression) {
+		if (expression instanceof BinaryExpression binaryExpression) {
+			return walkBinaryExpression(binaryExpression);
+		} else if (expression instanceof UnaryExpression unaryExpression) {
+			return walkUnaryExpression(unaryExpression);
+		} else if (expression instanceof OperandValue operandValue) {
+			return walkOperandValueExpression(operandValue);
+		} else if (expression instanceof ContextField) {
+			return true;
+		}
+		return false;
+	}
+
+	protected boolean walkBinaryExpression(BinaryExpression expression) {
+		if (walkExpression(expression.getLeft()) || walkExpression(expression.getRight())) {
+			return true;
+		}
+		return false;
+	}
+
+	protected boolean walkUnaryExpression(UnaryExpression expression) {
+		if (walkExpression(expression.getUnary())) {
+			return true;
+		}
+		return false;
+	}
+
+	protected boolean walkOperandValueExpression(OperandValue operandValue) {
+		OperandSymbol sym = operandValue.getConstructor().getOperand(operandValue.getIndex());
+		PatternExpression patexp = sym.getDefiningExpression();
+		if (patexp == null) {
+			TripleSymbol defSym = sym.getDefiningSymbol();
+			if (defSym != null) {
+				patexp = defSym.getPatternExpression();
+			}
+			if (patexp == null) {
+				return false;
+			}
+		}
+		if (walkExpression(patexp)) {
+			return true;
+		}
+		return false;
+	}
+
+	// TODO: PatternExpression doesn't implement hashCode or equals method, so this may not work
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + Objects.hash(expression);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!super.equals(obj) || getClass() != obj.getClass()) {
+			return false;
+		}
+		ScalarOperandMeta other = (ScalarOperandMeta) obj;
+		return Objects.equals(expression, other.expression);
 	}
 }

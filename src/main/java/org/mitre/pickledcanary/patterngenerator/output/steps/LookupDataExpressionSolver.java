@@ -1,7 +1,10 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
+
+import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
+import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 import ghidra.app.plugin.processors.sleigh.expression.AndExpression;
 import ghidra.app.plugin.processors.sleigh.expression.BinaryExpression;
@@ -27,8 +30,6 @@ import ghidra.app.plugin.processors.sleigh.symbol.OperandSymbol;
 import ghidra.app.plugin.processors.sleigh.symbol.TripleSymbol;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.mem.MemoryAccessException;
-import org.mitre.pickledcanary.patterngenerator.ExpressionMemoryAccessException;
-import org.mitre.pickledcanary.patterngenerator.UnsupportedExpressionException;
 
 /**
  * Ghidra already has a built-in expression solver (accessed by calling
@@ -54,21 +55,21 @@ public class LookupDataExpressionSolver {
 	 * Compare with what occurs in the various PatternExpression.getValue
 	 * implementations.
 	 */
-	public static long computeExpression(PatternExpression expression, MemBuffer input, int sp, int len) {
+	public static long computeExpression(PatternExpression expression, MemBuffer input, int[] context, int sp, int len) {
 		if (expression instanceof BinaryExpression binaryExpression) {
-			return computeBinaryExpression(binaryExpression, input, sp, len);
+			return computeBinaryExpression(binaryExpression, input, context, sp, len);
 		} else if (expression instanceof UnaryExpression unaryExpression) {
-			return computeUnaryExpression(unaryExpression, input, sp, len);
+			return computeUnaryExpression(unaryExpression, input, context, sp, len);
 		} else if (expression instanceof StartInstructionValue) {
 			return input.getAddress().add(sp).getUnsignedOffset();
 		} else if (expression instanceof ConstantValue constantValue) {
 			return computeConstantExpression(constantValue);
 		} else if (expression instanceof OperandValue ov) {
-			return computeOperandValueExpression(ov, input, sp, len);
+			return computeOperandValueExpression(ov, input, context, sp, len);
 		} else if (expression instanceof TokenField tf) {
 			return computeTokenFieldExpression(tf, input, sp);
 		} else if (expression instanceof ContextField tf) {
-			return computeContextFieldExpression(tf, input, sp);
+			return computeContextFieldExpression(tf, context, sp);
 		} else if (expression instanceof EndInstructionValue) {
 			return computeEndInstructionValueExpression(input, sp, len);
 		} else {
@@ -99,6 +100,27 @@ public class LookupDataExpressionSolver {
 	}
 
 	/**
+	 * Retrieve bytes from entire context register as an int.
+	 * Compare with "getContextBytes" in ghidra.app.plugin.processors.sleigh
+	 */
+	private static int getContextBytes(int[] context, int bytestart, int bytesize) {
+		int intstart = bytestart / 4;
+		int res = context[intstart];
+		int byteOffset = bytestart % 4;
+		int unusedBytes = 4 - bytesize;
+		res <<= byteOffset * 8;
+		res >>>= unusedBytes * 8;
+		int remaining = bytesize - 4 + byteOffset;
+		if (remaining > 0 && ++intstart < context.length) {
+			int res2 = context[intstart];
+			unusedBytes = 4 - remaining;
+			res2 >>>= unusedBytes * 8;
+			res |= res2;
+		}
+		return res;
+	}
+
+	/**
 	 * Get the bytes which make up the instruction defined by tf assuming tf is at
 	 * offset sp into input. Return the results as a long.
 	 * <p>
@@ -126,8 +148,9 @@ public class LookupDataExpressionSolver {
 			res = res << (8 * tmpsize);
 			res |= (tmp & 0xffffffffL);
 		}
-		if (!tf.isBigEndian())
+		if (!tf.isBigEndian()) {
 			res = TokenField.byteSwap(res, size);
+		}
 		return res;
 	}
 
@@ -137,7 +160,7 @@ public class LookupDataExpressionSolver {
 	 * Compare with "getContextBytes" in
 	 * ghidra.app.plugin.processors.sleigh.expression.ContextField
 	 */
-	private static long getContextBytes(ContextField cf, MemBuffer input, int sp) throws MemoryAccessException {
+	private static long getContextBytes(ContextField cf, int[] context, int sp) {
 		long res = 0;
 		int tmp;
 		int size;
@@ -145,37 +168,33 @@ public class LookupDataExpressionSolver {
 
 		size = cf.getByteEnd() - bs + 1;
 		while (size >= 4) {
-			tmp = input.getInt(sp + bs);
+			tmp = getContextBytes(context, bs, 4);
 			res <<= 32;
 			res |= tmp;
 			bs += 4;
 			size = cf.getByteEnd() - bs + 1;
 		}
 		if (size > 0) {
-			tmp = input.getInt(sp + bs);
+			tmp = getContextBytes(context, bs, size);
 			res <<= 8 * size;
 			res |= tmp;
 		}
 		return res;
 	}
 
-	private static long computeContextFieldExpression(ContextField tf, MemBuffer input, int sp) {
-		// This seems to be almost the same thing as a TokenField... what's actually the
-		// difference?
-		// TODO: is this implemented correctly? Should we be reading something else
-		// here?
-		long res;
-		try {
-			res = getContextBytes(tf, input, sp);
-		} catch (MemoryAccessException e) {
-			throw new ExpressionMemoryAccessException(tf, e);
-		}
+	/**
+	 * Similar to TokenField, but reads from context rather than from memory
+	 */
+	private static long computeContextFieldExpression(ContextField cf, int[] context, int sp) {
+		long res = getContextBytes(cf, context, sp);
 
-		res >>= tf.getShift();
-		if (tf.hasSignbit())
-			res = TokenField.signExtend(res, tf.getEndBit() - tf.getStartBit());
-		else
-			res = TokenField.zeroExtend(res, tf.getEndBit() - tf.getStartBit());
+		res >>= cf.getShift();
+		if (cf.hasSignbit()) {
+			res = TokenField.signExtend(res, cf.getEndBit() - cf.getStartBit());
+		}
+		else {
+			res = TokenField.zeroExtend(res, cf.getEndBit() - cf.getStartBit());
+		}
 		return res;
 	}
 
@@ -197,7 +216,7 @@ public class LookupDataExpressionSolver {
 
 	}
 
-	private static long computeOperandValueExpression(OperandValue ov, MemBuffer input, int sp, int len) {
+	private static long computeOperandValueExpression(OperandValue ov, MemBuffer input, int[] context, int sp, int len) {
 		OperandSymbol sym = ov.getConstructor().getOperand(ov.getIndex());
 		PatternExpression patexp = sym.getDefiningExpression();
 		if (patexp == null) {
@@ -212,12 +231,13 @@ public class LookupDataExpressionSolver {
 
 		int i = sym.getOffsetBase();
 		int offset = 0;
-		if (i < 0)
+		if (i < 0) {
 			offset = sym.getRelativeOffset();
+		}
 
 		// TODO: Should len be adjusted here? Probably... See other stuff done in
 		// ParserWalker.setOutOfBandState
-		return computeExpression(patexp, input, sp + offset, len);
+		return computeExpression(patexp, input, context, sp + offset, len);
 	}
 
 	private static long computeConstantExpression(ConstantValue expression) {
@@ -229,10 +249,10 @@ public class LookupDataExpressionSolver {
 		}
 	}
 
-	private static long computeBinaryExpression(BinaryExpression expression, MemBuffer input, int sp, int len) {
-		long leftval = computeExpression(expression.getLeft(), input, sp, len);
-		long rightval = computeExpression(expression.getRight(), input, sp, len);
-		
+	private static long computeBinaryExpression(BinaryExpression expression, MemBuffer input, int[] context, int sp, int len) {
+		long leftval = computeExpression(expression.getLeft(), input, context, sp, len);
+		long rightval = computeExpression(expression.getRight(), input, context, sp, len);
+
 		if (expression instanceof PlusExpression) {
 			return leftval + rightval;
 		} else if (expression instanceof SubExpression) {
@@ -255,9 +275,9 @@ public class LookupDataExpressionSolver {
 			throw new UnsupportedExpressionException(expression);
 		}
 	}
-	
-	private static long computeUnaryExpression(UnaryExpression expression, MemBuffer input, int sp, int len) {
-		long unary = computeExpression(expression.getUnary(), input, sp, len);
+
+	private static long computeUnaryExpression(UnaryExpression expression, MemBuffer input, int[] context, int sp, int len) {
+		long unary = computeExpression(expression.getUnary(), input, context, sp, len);
 		if (expression instanceof MinusExpression) {
 			return -unary;
 		} else if (expression instanceof NotExpression) {

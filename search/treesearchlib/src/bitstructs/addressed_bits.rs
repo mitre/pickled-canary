@@ -1,3 +1,4 @@
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 use core::convert::TryFrom;
 use core::ops::RangeBounds;
 

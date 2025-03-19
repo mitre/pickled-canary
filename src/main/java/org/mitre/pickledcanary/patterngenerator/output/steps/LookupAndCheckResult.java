@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -22,6 +22,7 @@ public class LookupAndCheckResult {
 		return this.saved;
 	}
 
+	@Override
 	public String toString() {
 		return "LookupAndCheckResult(size: " + this.size + ", saved: " + this.saved.toString() + ")";
 	}

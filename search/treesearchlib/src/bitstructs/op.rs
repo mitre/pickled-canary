@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use super::super::jsonstructs as j;
 use super::{LookupType, Pattern};
@@ -400,13 +400,14 @@ mod tests {
         .unwrap();
         let bin_op: Op<Msb0> = json_op.into();
 
-        let expected = Op::<Msb0>::LookupQuick {
+        let expected = Op::LookupQuick {
             bytes: vec![0],
             data: vec![LookupType::MaskAndChooseu32 {
                 mask: 0xFFFFFFFF,
                 choices: vec![InstructionEncodingu32 {
                     value: 0x30a0e3,
                     operands: vec![],
+                    context: None,
                 }],
             }],
         };
@@ -444,13 +445,14 @@ mod tests {
         .unwrap();
         let bin_op: Op<Msb0> = json_op.into();
 
-        let expected = Op::<Msb0>::LookupQuick {
+        let expected = Op::LookupQuick {
             bytes: vec![48],
             data: vec![LookupType::MaskAndChooseAligned {
                 mask: vec![0xFF, 0xFF, 0xFF],
                 choices: vec![InstructionEncodingAligned {
                     value: vec![0x30, 0xa0, 0xe3],
                     operands: vec![],
+                    context: None,
                 }],
             }],
         };

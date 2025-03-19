@@ -3,7 +3,7 @@
 //! by using a fixed ring buffer for the individual step's states so that states
 //! are processed in the correct order (preservinig OR priority)
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 #[cfg(test)]
 use core::fmt;

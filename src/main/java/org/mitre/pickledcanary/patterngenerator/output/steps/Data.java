@@ -1,5 +1,5 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -12,11 +12,14 @@ import org.mitre.pickledcanary.util.JsonSerializable;
 
 import ghidra.program.model.mem.MemBuffer;
 
+/**
+ * Holds the assembly encodings of a {@link LookupStep}.
+ */
 public interface Data extends JsonSerializable {
 
 	/**
 	 * Replace temporary table key with the actual table key.
-	 * 
+	 *
 	 * @param tables
 	 */
 	public void resolveTableIds(AllLookupTables tables);
@@ -24,7 +27,7 @@ public interface Data extends JsonSerializable {
 	/**
 	 * Execute this lookup on the given MemBuffer at offset sp using the given tables.
 	 * <p>
-	 * There's a good chance you want to use doLookupAndCheck instead of this method
+	 * There's a good chance you want to use doLookupAndCheck instead of this method.
 	 */
 	public LookupResults doLookup(MemBuffer input, int sp, List<LookupTable> tables);
 
@@ -41,8 +44,14 @@ public interface Data extends JsonSerializable {
 	public SavedData doCheck(LookupResults toCheck, SavedData existing);
 
 	/**
-	 * Do both a doLookup and a doCheck (see their descriptions for more info)
+	 * Do both a doLookup and a doCheck (see their descriptions for more info).
 	 */
 	public LookupAndCheckResult doLookupAndCheck(MemBuffer input, int sp, List<LookupTable> tables,
 			SavedData existing);
+
+	/**
+	 * Combine the encodings of another Data into this Data.
+	 * @param that another Data
+	 */
+	public void combine(Data that);
 }

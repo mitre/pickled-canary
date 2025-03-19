@@ -2,7 +2,7 @@
 // Pickled Canary script to compile an assembly pattern into a compiled pattern.
 // @author MITRE
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import java.io.File;
 import java.nio.file.Files;
@@ -55,7 +55,7 @@ public class AssembleAndRunPattern extends GhidraScript {
 	 * file. This version shows only ptn and json files. When asking for which JSON
 	 * file to write to, defaults to the ptn filename, with the .ptn extension
 	 * replaced with .json.
-	 * 
+	 *
 	 * @param isSave true if asking user to save JSON file; false if asking user to
 	 *               choose ptn file
 	 * @return file object to read or write to

@@ -1,11 +1,14 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A construct that allows patterns to contain multiple branches.
+ */
 public class OrMultiState {
 
 	/**

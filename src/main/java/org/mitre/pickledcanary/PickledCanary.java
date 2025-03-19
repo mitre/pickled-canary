@@ -1,23 +1,29 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.mitre.pickledcanary.patterngenerator.PCVisitor;
 import org.mitre.pickledcanary.search.Pattern;
+import org.mitre.pickledcanary.search.Pikevm;
+import org.mitre.pickledcanary.search.SavedData;
 import org.mitre.pickledcanary.search.SavedDataAddresses;
-import org.mitre.pickledcanary.search.VmSearch;
 
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.MemBuffer;
+import ghidra.program.model.mem.MemoryBufferImpl;
 import ghidra.util.Swing;
 import ghidra.util.datastruct.Accumulator;
+import ghidra.util.datastruct.ListAccumulator;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.filechooser.ExtensionFileFilter;
 import ghidra.util.task.TaskMonitor;
@@ -88,6 +94,16 @@ public class PickledCanary {
 	/**
 	 * Runs the given pattern, returning all results in the given program.
 	 */
+	public static List<SavedDataAddresses> parseAndRunAll(TaskMonitor monitor,
+			Program program, Address address, String pattern, List<AddressRange> ranges) {
+		Pattern patternCompiled = compileWrapped(monitor, pattern, program, address);
+
+		return runAll(monitor, program, patternCompiled, ranges);
+	}
+
+	/**
+	 * Runs the given pattern, returning all results in the given program.
+	 */
 	public static void parseAndRunAll(TaskMonitor monitor, Program program,
 			Address address,
 			Accumulator<SavedDataAddresses> accumulator, String pattern) {
@@ -113,9 +129,21 @@ public class PickledCanary {
 	public static List<SavedDataAddresses> runAll(TaskMonitor monitor, Program program,
 			Pattern pattern) {
 		monitor.setMessage("Searching");
-		VmSearch vm = new VmSearch(pattern, program.getMemory());
+		var a = new ListAccumulator<SavedDataAddresses>();
+		runAll(monitor, program, pattern, a);
+		return a.asList();
+	}
 
-		return vm.runAll(monitor);
+	/**
+	 * Runs the given pattern on the given program. You may prefer to use
+	 * {@link #parseAndRunAll(TaskMonitor, String, Program, Address) parseAndRunAll}
+	 */
+	public static List<SavedDataAddresses> runAll(TaskMonitor monitor, Program program,
+			Pattern pattern, List<AddressRange> ranges) {
+		monitor.setMessage("Searching");
+		var a = new ListAccumulator<SavedDataAddresses>();
+		runAll(monitor, program, pattern, ranges, a);
+		return a.asList();
 	}
 
 	/**
@@ -125,9 +153,67 @@ public class PickledCanary {
 	public static void runAll(TaskMonitor monitor, Program program, Pattern pattern,
 			Accumulator<SavedDataAddresses> accumulator) {
 		monitor.setMessage("Searching");
-		VmSearch vm = new VmSearch(pattern, program.getMemory());
+		List<AddressRange> ranges = new ArrayList<>();
+		program.getMemory().getAddressRanges().forEachRemaining(ranges::add);
 
-		vm.runAll(monitor, accumulator);
+		runAll(monitor, program, pattern, ranges, accumulator);
+	}
+
+	/**
+	 * Runs the given pattern on the given program. You may prefer to use
+	 * {@link #parseAndRunAll(TaskMonitor, String, Program, Address) parseAndRunAll}
+	 */
+	public static void runAll(TaskMonitor monitor, Program program, Pattern pattern,
+			List<AddressRange> ranges,
+			Accumulator<SavedDataAddresses> accumulator) {
+		monitor.setMessage("Searching");
+
+		if (ranges == null) {
+			ranges = new ArrayList<>();
+			program.getMemory().getAddressRanges().forEachRemaining(ranges::add);
+		}
+
+		int totalRanges = ranges.size();
+		int currentRangeNumber = 1;
+		monitor.setIndeterminate(false);
+
+		long totalSizeToSearch = 0;
+		for (AddressRange range : ranges) {
+			totalSizeToSearch += range.getLength();
+		}
+
+		monitor.setIndeterminate(false);
+		monitor.setProgress(0);
+		monitor.setMaximum(totalSizeToSearch);
+		long totalSearched = 0;
+		for (AddressRange range : ranges) {
+
+			monitor.setMessage(
+				"Searching memory range " + currentRangeNumber + " of " + totalRanges);
+
+			Address start = range.getMinAddress();
+			MemBuffer buf = new MemoryBufferImpl(program.getMemory(), start);
+			Pikevm vm = new Pikevm(pattern, buf, monitor);
+			vm.setMaxAddress(range.getMaxAddress());
+			while (true) {
+				SavedData result = vm.run();
+				if (result != null) {
+					var a = new SavedDataAddresses(result, start);
+					accumulator.add(a);
+					totalSearched += a.getStart().subtract(start);
+					monitor.setProgress(totalSearched);
+				}
+				else {
+					break;
+				}
+
+				if (monitor.isCancelled()) {
+					return;
+				}
+			}
+
+			currentRangeNumber += 1;
+		}
 	}
 
 	public enum AskFileType {

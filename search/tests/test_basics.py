@@ -14,7 +14,7 @@ and the path to use below may have to change based on your target platform.
 More to come...
 
 """
-# Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import pprint
 import sys

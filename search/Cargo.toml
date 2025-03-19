@@ -1,3 +1,4 @@
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 [workspace]
 members = ["treesearchtool", "treesearchlib", "pclib", "pcviz"]
 

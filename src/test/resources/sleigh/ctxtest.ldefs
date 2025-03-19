@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<language_definitions>
+    <language processor="ctxtest"
+              endian="little"
+              size="16"
+              variant="default"
+              version="1.0"
+              slafile="ctxtest.sla"
+              processorspec="ctxtest.pspec"
+              id="ctxtest:LE:16:default">
+        <description>ctxtest</description>
+        <compiler name="default" spec="ctxtest.cspec" id="default"/>
+    </language>
+</language_definitions>

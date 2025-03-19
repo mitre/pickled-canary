@@ -13,7 +13,7 @@
 //! improvement with this improvement. This can be found in
 //! [crate::automata::pikevm_loop_ring]
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::clone::Clone;
 use core::convert::TryInto;
@@ -104,11 +104,16 @@ pub fn process_thread<Endian: BitOrder + Clone + PartialEq, T: States>(
                 pc += 1;
             }
             Op::Label { value } => {
-                saved.labels.insert(
-                    value.clone(),
-                    TryInto::<i128>::try_into(sp).unwrap() + i128::from(input.get_base_address()),
-                );
-                // states.add(sp, Thread::new(pc + 1, &saved));
+                let this_label_value =
+                    TryInto::<i128>::try_into(sp).unwrap() + i128::from(input.get_base_address());
+
+                if let Some(existing_value) = saved.labels.get(&value.clone()) {
+                    if *existing_value != this_label_value {
+                        break;
+                    }
+                } else {
+                    saved.labels.insert(value.clone(), this_label_value);
+                }
                 pc += 1;
             }
             Op::AnyByte => {

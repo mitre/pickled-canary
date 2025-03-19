@@ -7,7 +7,7 @@
 //!
 //! The next improvement is found in [crate::automata::pikevm_ring]
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::clone::Clone;
 use core::convert::TryInto;
@@ -97,11 +97,16 @@ pub fn pikevm_inner<Endian: BitOrder + Clone + PartialEq, T: States>(
                     states.add(sp, Thread::new(pc + 1, &t.saved));
                 }
                 Op::Label { value } => {
-                    t.saved.labels.insert(
-                        value.clone(),
-                        TryInto::<i128>::try_into(sp).unwrap()
-                            + i128::from(input.get_base_address()),
-                    );
+                    let this_label_value = TryInto::<i128>::try_into(sp).unwrap()
+                        + i128::from(input.get_base_address());
+
+                    if let Some(existing_value) = t.saved.labels.get(&value.clone()) {
+                        if *existing_value != this_label_value {
+                            continue;
+                        }
+                    } else {
+                        t.saved.labels.insert(value.clone(), this_label_value);
+                    }
                     states.add(sp, Thread::new(pc + 1, &t.saved));
                 }
                 Op::AnyByte => states.add(sp + 1, Thread::new(pc + 1, &t.saved)),

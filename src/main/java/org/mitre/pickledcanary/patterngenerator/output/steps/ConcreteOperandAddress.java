@@ -1,5 +1,5 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
@@ -10,17 +10,16 @@ import java.util.Objects;
  * that has been found to have the concrete value of a given address (actually,
  * more accurately an sp index). It's typically found to have an address as its
  * value because it was specified as ":Q1" in the pattern.
- *
  */
 public class ConcreteOperandAddress extends ConcreteOperand {
 
-	private final String varId;
-	private final Long value;
+	private final String varId; // variable name (e.g. Q1)
+	private final long value; // address value of varId
 
-	public ConcreteOperandAddress(String varId, Long x) {
+	public ConcreteOperandAddress(String varId, long value) {
 		super(ConcreteOperand.TypeOfOperand.Scalar);
 		this.varId = varId;
-		this.value = x;
+		this.value = value;
 	}
 
 	@Override
@@ -33,7 +32,7 @@ public class ConcreteOperandAddress extends ConcreteOperand {
 		return "" + this.value;
 	}
 
-	public Long getValueLong() {
+	public long getValueLong() {
 		return this.value;
 	}
 
@@ -43,14 +42,19 @@ public class ConcreteOperandAddress extends ConcreteOperand {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ConcreteOperandAddress)) {
+	public int hashCode() {
+		return Objects.hash(value, varId);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		ConcreteOperandAddress that = (ConcreteOperandAddress) o;
-		if (Objects.equals(this.value, that.getValueLong())) {
-			return false;
-		}
-		return this.varId.equals(that.getVarId());
+		ConcreteOperandAddress other = (ConcreteOperandAddress) obj;
+		return Objects.equals(value, other.value) && Objects.equals(varId, other.varId);
 	}
 }

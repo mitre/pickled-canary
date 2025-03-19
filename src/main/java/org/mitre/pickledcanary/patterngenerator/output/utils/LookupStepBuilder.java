@@ -1,39 +1,52 @@
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
-import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
-import ghidra.asm.wild.WildOperandInfo;
-import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
+import java.util.List;
+import java.util.Set;
+
 import org.mitre.pickledcanary.PickledCanary;
-import org.mitre.pickledcanary.patterngenerator.output.steps.*;
+import org.mitre.pickledcanary.patterngenerator.output.steps.Data;
+import org.mitre.pickledcanary.patterngenerator.output.steps.FieldOperandMeta;
+import org.mitre.pickledcanary.patterngenerator.output.steps.InstructionEncoding;
+import org.mitre.pickledcanary.patterngenerator.output.steps.LookupData;
+import org.mitre.pickledcanary.patterngenerator.output.steps.LookupStep;
+import org.mitre.pickledcanary.patterngenerator.output.steps.OperandMeta;
+import org.mitre.pickledcanary.patterngenerator.output.steps.ScalarOperandMeta;
 import org.mitre.pickledcanary.util.PCAssemblerUtils;
 import org.mitre.pickledcanary.util.PCBytes;
 
-import java.util.List;
-import java.util.Set;
+import ghidra.app.plugin.assembler.sleigh.sem.AssemblyPatternBlock;
+import ghidra.app.plugin.processors.sleigh.ContextCache;
+import ghidra.asm.wild.WildOperandInfo;
+import ghidra.asm.wild.sem.WildAssemblyResolvedPatterns;
+import ghidra.program.model.lang.DisassemblerContextAdapter;
+import ghidra.program.model.lang.Register;
+import ghidra.program.model.lang.RegisterValue;
 
 /**
  * Utility class for building up {@link LookupStep} objects from resolved assembly patterns.
  */
 public class LookupStepBuilder {
 	private final AllLookupTables tables;
-	private final LookupStep lookupStep = new LookupStep();
+	private final LookupStep lookupStep;
 
 	/**
 	 * Create a new instance of this builder.
-	 * @param tables reference to the lookup tables so they can be updated as patterns are parsed.
+	 * @param lookupStep step in which to populate instruction encodings
+	 * @param tables reference to the lookup tables so they can be updated as patterns are parsed
 	 */
-	public LookupStepBuilder(AllLookupTables tables) {
+	public LookupStepBuilder(LookupStep lookupStep, AllLookupTables tables) {
 		this.tables = tables;
+		this.lookupStep = lookupStep;
 	}
 
 	/**
-	 * Add a resolved assembly pattern to the LookupStep.
-	 * @param pats the resolved assembly pattern
-	 * @return this builder.
+	 * Add an assembly encoding to the LookupStep.
+	 * @param pats the assembly encoding
+	 * @param context input context
 	 */
-	public LookupStepBuilder addAssemblyPattern(WildAssemblyResolvedPatterns pats) {
+	public void addAssemblyPattern(WildAssemblyResolvedPatterns pats, RegisterValue context) {
 		AssemblyPatternBlock assemblyPatternBlock = pats.getInstruction();
 		Set<WildOperandInfo> operandInfos = pats.getOperandInfo();
 
@@ -45,8 +58,9 @@ public class LookupStepBuilder {
 		if (PickledCanary.DEBUG) {
 			System.err.println("noWildcardMask = " + noWildcardMask);
 		}
-		if (noWildcardMask == null)
-			return this;
+		if (noWildcardMask == null) {
+			return;
+		}
 
 		List<Integer> noWildcardMaskList = PCBytes.integerList(noWildcardMask.getMaskAll());
 
@@ -107,10 +121,49 @@ public class LookupStepBuilder {
 				if (!ie.matches(ot)) {
 					ie.addOperand(ot);
 				}
+
+				// Only add the input context when required
+				// TODO: Any scenario where condensing encodings affects local context association?
+				if (ot instanceof ScalarOperandMeta sm) {
+					if (sm.hasContext() && ie.getContext() == null) {
+						System.err.println("Adding the context!!!");
+						ie.addContext(convertContext(context));
+					}
+				}
 			}
 		}
+	}
 
-		return this;
+	/**
+	 * Class to help convert context into form expected by the solver.
+	 * Beats having to reimplement a ton of functions.
+	 */
+	static class ContextAdapter implements DisassemblerContextAdapter {
+		private final RegisterValue context;
+
+		public ContextAdapter(RegisterValue context) {
+			this.context = context;
+		}
+
+		@Override
+		public RegisterValue getRegisterValue(Register register) {
+			return context.getRegisterValue(register);
+		}
+	}
+
+	/**
+	 * Convert the context from the pattern into form expected by the solver.
+	 */
+	private int[] convertContext(RegisterValue context) {
+		// TODO: Slight hack
+		// Just using ContextCache for conversion from RegisterValue -> int[]
+		ContextCache temp = new ContextCache();
+		temp.registerVariable(context.getRegister());
+
+		int[] convert = new int[temp.getContextSize()];
+		temp.getContext(new ContextAdapter(context), convert);
+
+		return convert;
 	}
 
 	/**

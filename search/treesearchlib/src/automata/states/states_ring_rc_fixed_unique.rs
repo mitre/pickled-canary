@@ -2,7 +2,7 @@
 //! [StatesRingRcFixed](crate::states::states_ring_rc_fixed::StatesRingRcFixed)
 //! by preventing duplicate states from being added/processed
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::fmt;
 use core::fmt::Display;

@@ -1,11 +1,12 @@
 
-// Copyright (C) 2022 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a string of bits.
@@ -17,7 +18,7 @@ public class BitArray {
 
 	/**
 	 * Construct an empty string of bits given a number of bytes.
-	 * 
+	 *
 	 * @param numBytes the number of bytes that this string of bits should have
 	 */
 	public BitArray(int numBytes) {
@@ -27,7 +28,7 @@ public class BitArray {
 
 	/**
 	 * Construct a new string of bits given a byte array.
-	 * 
+	 *
 	 * @param bits the bits
 	 */
 	public BitArray(byte[] bits) {
@@ -51,7 +52,7 @@ public class BitArray {
 
 	/**
 	 * Construct a new string of bits given a BitSet and number of bytes.
-	 * 
+	 *
 	 * @param bs       the bits
 	 * @param numBytes the number of bytes that this string of bits should have
 	 */
@@ -62,7 +63,7 @@ public class BitArray {
 
 	/**
 	 * Construct a new string of bits given an existing BitArray.
-	 * 
+	 *
 	 * @param ba the bits
 	 */
 	public BitArray(BitArray ba) {
@@ -82,7 +83,7 @@ public class BitArray {
 
 	/**
 	 * Performs a bitwise AND operation between two BitArrays.
-	 * 
+	 *
 	 * @see BitSet#and(BitSet set)
 	 * @param ba the BitArray that this BitArray should perform an AND with
 	 * @return a new string of bits with the resulting AND operation
@@ -95,7 +96,7 @@ public class BitArray {
 
 	/**
 	 * Performs a bitwise NOT operation.
-	 * 
+	 *
 	 * @see BitSet#flip(int, int)
 	 * @return a new string of bits with the resulting NOT operation
 	 */
@@ -107,7 +108,7 @@ public class BitArray {
 
 	/**
 	 * Performs a bitwise OR operation between two BitArrays.
-	 * 
+	 *
 	 * @see BitSet#or(BitSet)
 	 * @param ba the BitArray that this BitArray should perform an OR with
 	 * @return a new string of bits with the resulting OR operation
@@ -120,7 +121,7 @@ public class BitArray {
 
 	/**
 	 * Get the bits that match a given mask.
-	 * 
+	 *
 	 * @param mask the mask that should be matched to
 	 * @return new set of masked bits with the length of the BitArray set to the
 	 *         smallest number of bytes needed to fit the mask
@@ -142,7 +143,7 @@ public class BitArray {
 
 	/**
 	 * Get the bits that match a given mask.
-	 * 
+	 *
 	 * @param mask the mask that should be matched to
 	 * @return a long containing the masked bits
 	 */
@@ -176,9 +177,26 @@ public class BitArray {
 		return bs.toString();
 	}
 
+	@Override
+	public int hashCode() {
+		return Objects.hash(bs, numBytes);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		BitArray other = (BitArray) obj;
+		return Objects.equals(bs, other.bs) && numBytes == other.numBytes;
+	}
+
 	/**
 	 * Convert bytes to binary string.
-	 * 
+	 *
 	 * @return the bits represented as 1s and 0s in a string
 	 */
 	public String getBinary() {
@@ -191,7 +209,7 @@ public class BitArray {
 
 	/**
 	 * Convert to a long.
-	 * 
+	 *
 	 * @return long
 	 */
 	public long toLong() {

@@ -2,7 +2,7 @@
 // Assemble all patterns in a Pickled Canary meta pattern
 // @author MITRE
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 import java.io.File;
 import java.nio.file.Files;
@@ -75,7 +75,7 @@ public class AssembleAllPatterns extends GhidraScript {
 			if (meta.length() < 2) {
 				throw new RuntimeException("Didn't find meta block or meta block too short in file: " + patternPath);
 			}
-			
+
 			final JSONObject metaBlock = new JSONObject(meta.toString());
 			final JSONArray compileUsingList = metaBlock.getJSONArray("compile_using");
 			for (int j = 0; j < compileUsingList.length(); j++) {

@@ -1,4 +1,3 @@
-package org.mitre.pickledcanary.searchInterface;
 /* ###
  * IP: GHIDRA
  *
@@ -19,14 +18,16 @@ package org.mitre.pickledcanary.searchInterface;
  * Based on Ghidra's sample SampleSearchTableProvider.
  */
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
+
+package org.mitre.pickledcanary.searchInterface;
 
 import docking.ActionContext;
+import docking.DockingUtils;
+import docking.UndoRedoKeeper;
 import docking.action.DockingAction;
 import docking.action.ToolBarData;
 import docking.widgets.OptionDialog;
-import docking.widgets.label.GLabel;
-import ghidra.app.services.GoToService;
 import ghidra.framework.options.OptionsChangeListener;
 import ghidra.framework.options.ToolOptions;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
@@ -44,6 +45,10 @@ import resources.ResourceManager;
 import resources.icons.TranslateIcon;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
@@ -71,6 +76,9 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 	private File selectedFile;
 	private File selectedCompiledFile;
 	private PickledCanarySearcher searcher;
+	private SelectionScopeWidget scope;
+	private ContextHelper contextHelper;
+	private UndoRedoKeeper undoRedoKeeper;
 
 	public PickledCanarySearchTableProvider(PickledCanarySearchTablePlugin plugin,
 			String initialValue) {
@@ -82,10 +90,27 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 
 	private void doSearch(boolean removeDebugFlag) {
 		searcher.setQuery(textArea.getText(), removeDebugFlag);
+		searcher.setRange(scope.getSearchRange());
 		saveCompiledAsAction.setEnabled(false);
 		saveCompiledAction.setEnabled(false);
 		model.doClearData();
 		model.reload();
+	}
+
+	String getPatternText() {
+		return textArea.getText();
+	}
+
+	void setPatternText(String pattern) {
+		textArea.setText(pattern);
+		PickledCanarySearchTableProvider.this.saveAction
+				.setEnabled(PickledCanarySearchTableProvider.this.selectedFile != null);
+	}
+
+	void insertIntoPatternTextAtCursor(String toInsert) {
+		textArea.insert(toInsert, textArea.getCaretPosition());
+		PickledCanarySearchTableProvider.this.saveAction
+		.setEnabled(PickledCanarySearchTableProvider.this.selectedFile != null);
 	}
 
 	private JComponent build(String initialValue) {
@@ -95,13 +120,17 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 		JPanel compiledTab = new JPanel(new BorderLayout());
 		removeDebugCheckbox = new JCheckBox("Remove Debug Information", false);
 
+		JPanel searchPanel = new JPanel(new BorderLayout());
+
 		JPanel patternPanel = new JPanel(new BorderLayout());
-		patternPanel.add(new GLabel("Pattern"), BorderLayout.NORTH);
-		patternPanel.add(new GLabel("Ctrl-Enter to search"), BorderLayout.SOUTH);
+		patternPanel.setBorder(
+			new CompoundBorder(new TitledBorder("Pattern"), new EmptyBorder(5, 5, 5, 5)));
 
 		textArea = new JTextArea(5, 25);
 		textArea.setEditable(true);
+		textArea.setMargin(new Insets(5, 5, 5, 5));
 		textArea.setText(initialValue);
+		undoRedoKeeper = DockingUtils.installUndoRedo(textArea);
 
 		InputMap im = textArea.getInputMap();
 		ActionMap am = textArea.getActionMap();
@@ -127,9 +156,16 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 			}
 		});
 
-		patternPanel.add(new JScrollPane(textArea));
+		patternPanel.add(new JScrollPane(textArea), BorderLayout.CENTER);
 
 		JTabbedPane tabbedPanel = new JTabbedPane();
+
+		contextHelper = new ContextHelper(plugin, this);
+		Component contextPanel = contextHelper.buildContextPanel();
+
+		tabbedPanel.addTab("Context", Icons.get("images/flag_green.png"), contextPanel,
+			"See Context information");
+		tabbedPanel.setMnemonicAt(0, KeyEvent.VK_1);
 
 		JPanel resultsPanel = new JPanel(new BorderLayout());
 
@@ -143,22 +179,21 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 		}
 
 		searcher = new PickledCanarySearcher(plugin.getCurrentProgram(), currentAddress,
-				textArea.getText());
+			textArea.getText());
 		model = new PickledCanarySearchTableModel(searcher, plugin.getTool()); // Results tab
 
 		// Watch for changes in the table and pull/re-pull the compiled pattern into the
 		// results text box when we have results.
 		model.addTableModelListener(e -> {
 			String s = searcher.getCompiledPattern();
-			if (s.compareTo(PickledCanarySearchTableProvider.this.textAreaCompiled.getText()) !=
-					0) {
+			if (s.compareTo(
+				PickledCanarySearchTableProvider.this.textAreaCompiled.getText()) != 0) {
 				PickledCanarySearchTableProvider.this.textAreaCompiled.setText(s);
-				if (!s.equals(PickledCanarySearcher.COMPILING_PATTERN)
-						&& !s.equals(PickledCanarySearcher.NOT_COMPILED_STRING)) {
+				if (!s.equals(PickledCanarySearcher.COMPILING_PATTERN) &&
+					!s.equals(PickledCanarySearcher.NOT_COMPILED_STRING)) {
 					saveCompiledAction
 							.setEnabled(
-									PickledCanarySearchTableProvider.this.selectedCompiledFile !=
-											null);
+								PickledCanarySearchTableProvider.this.selectedCompiledFile != null);
 					saveCompiledAsAction.setEnabled(true);
 				}
 			}
@@ -170,52 +205,63 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				titleCount += " (of " + unfilteredRowCount + ")";
 			}
 			PickledCanarySearchTableProvider.this.setTitle(
-					"Pickled Canary Search Results - " + titleCount);
+				"Pickled Canary Search Results - " + titleCount);
 		});
 
 		searcher.addListener(e -> {
 			String s = searcher.getCompiledPattern();
 			PickledCanarySearchTableProvider.this.textAreaCompiled.setText(s);
 			saveCompiledAction.setEnabled(
-					PickledCanarySearchTableProvider.this.selectedCompiledFile != null);
+				PickledCanarySearchTableProvider.this.selectedCompiledFile != null);
 			saveCompiledAsAction.setEnabled(true);
 		});
 
 		// listener for Remove Debug Info Checkbox
 		removeDebugCheckbox.addItemListener(e ->
-				// refreshing and recompiling the pattern WITHOUT the debug information
-				// refreshing and recompiling the pattern WITH the debug information
-				doSearch(e.getStateChange() == ItemEvent.SELECTED)
-		);
+		// refreshing and recompiling the pattern WITHOUT the debug information
+		// refreshing and recompiling the pattern WITH the debug information
+		doSearch(e.getStateChange() == ItemEvent.SELECTED));
 
 		filterTable = new GhidraThreadedTablePanel<>(model, 500, 1000);
 		GhidraTable table = filterTable.getTable();
 
-		GoToService goToService = tool.getService(GoToService.class);
-		if (goToService != null) {
-			table.installNavigation(goToService, goToService.getDefaultNavigatable());
-		}
+		table.installNavigation(tool);
 		table.setNavigateOnSelectionEnabled(true);
 		resultsPanel.add(filterTable);
 
 		tabbedPanel.addTab("Results", Icons.SORT_DESCENDING_ICON, resultsPanel, "Show Results");
-		tabbedPanel.setMnemonicAt(0, KeyEvent.VK_1);
+		tabbedPanel.setMnemonicAt(1, KeyEvent.VK_2);
 
 		textAreaCompiled = new JTextArea(5, 25);
 		textAreaCompiled.setEditable(false);
+		textAreaCompiled.setMargin(new Insets(5, 5, 5, 5));
 		textAreaCompiled.setText("Compile the pattern first...");
 
 		compiledTab.add(new JScrollPane(textAreaCompiled), BorderLayout.CENTER);
 		compiledTab.add(removeDebugCheckbox, BorderLayout.PAGE_END);
 
 		tabbedPanel.addTab("Compiled", Icons.get("images/checkmark_yellow.gif"), compiledTab,
-				"Show compiled pattern");
-		tabbedPanel.setMnemonicAt(0, KeyEvent.VK_2);
+			"Show compiled pattern");
+		tabbedPanel.setMnemonicAt(2, KeyEvent.VK_3);
 
-		splitPane.setLeftComponent(patternPanel);
+		JPanel control = new JPanel(new BorderLayout());
+		scope = new SelectionScopeWidget(this.plugin, "Search Scope");
+		control.add(scope, BorderLayout.NORTH);
+		JButton searchButton = new JButton("Search");
+		searchButton.addActionListener(l -> doSearch(removeDebugCheckbox.isSelected()));
+		searchButton.setToolTipText("Ctrl-Enter in the pattern box to search");
+		control.add(searchButton);
+
+		searchPanel.add(patternPanel, BorderLayout.CENTER);
+		searchPanel.add(control, BorderLayout.SOUTH);
+
+		tabbedPanel.setSelectedIndex(1);
+
+		splitPane.setLeftComponent(searchPanel);
 		splitPane.setRightComponent(tabbedPanel);
 
 		container.add(splitPane, BorderLayout.CENTER);
+
 		setVisible(true);
 		return container;
 	}
@@ -228,9 +274,9 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 
 				try {
 					PickledCanarySearchTableProvider.this.selectedFile =
-							PickledCanary.pcAskFile(false,
-									PickledCanary.AskFileType.Pattern,
-									PickledCanarySearchTableProvider.this.selectedFile);
+						PickledCanary.pcAskFile(false,
+							PickledCanary.AskFileType.Pattern,
+							PickledCanarySearchTableProvider.this.selectedFile);
 				}
 				catch (CancelledException e) {
 					return;
@@ -239,7 +285,7 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				String query;
 				try {
 					query = Files.readString(
-							PickledCanarySearchTableProvider.this.selectedFile.toPath());
+						PickledCanarySearchTableProvider.this.selectedFile.toPath());
 				}
 				catch (IOException e) {
 					e.printStackTrace();
@@ -263,9 +309,9 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 
 				try {
 					PickledCanarySearchTableProvider.this.selectedFile =
-							PickledCanary.pcAskFile(true,
-									PickledCanary.AskFileType.Pattern,
-									PickledCanarySearchTableProvider.this.selectedFile);
+						PickledCanary.pcAskFile(true,
+							PickledCanary.AskFileType.Pattern,
+							PickledCanarySearchTableProvider.this.selectedFile);
 				}
 				catch (CancelledException e) {
 					return;
@@ -273,9 +319,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 
 				if (selectedFile.exists()) {
 					final boolean overwrite = OptionDialog.showYesNoDialog(null, "Confirm Save As",
-							selectedFile.getName()
-									+ " already exists.\nDo you want to replace it?") ==
-							OptionDialog.OPTION_ONE;
+						selectedFile.getName() +
+							" already exists.\nDo you want to replace it?") == OptionDialog.OPTION_ONE;
 					if (!overwrite) {
 						return;
 					}
@@ -288,8 +333,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				}
 				catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
-							"Got an error writing the specified file. See details for more information",
-							e);
+						"Got an error writing the specified file. See details for more information",
+						e);
 				}
 
 			}
@@ -308,22 +353,22 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				}
 				catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
-							"Got an error writing the specified file. See details for more information",
-							e);
+						"Got an error writing the specified file. See details for more information",
+						e);
 				}
 				this.setEnabled(false);
 
 			}
 		};
-		saveAction.setToolBarData(new ToolBarData(Icons.get("images/Disk.png"), null));
+		saveAction.setToolBarData(new ToolBarData(Icons.get("images/disk.png"), null));
 		saveAction.setEnabled(this.selectedFile != null);
 		saveAction.markHelpUnnecessary();
 		dockingTool.addLocalAction(this, saveAction);
 
 		final ImageIcon compiledPatternIcon =
-				ResourceManager.getImageIcon(new MultiIcon(Icons.get("images/Disk.png"),
-						new TranslateIcon(ResourceManager.loadImage("images/cache.png", 10, 10), 6,
-								6)));
+			ResourceManager.getImageIcon(new MultiIcon(Icons.get("images/disk.png"),
+				new TranslateIcon(ResourceManager.loadImage("images/cache.png", 10, 10), 6,
+					6)));
 
 		// ## Save compiled pattern as
 		saveCompiledAsAction = new DockingAction("Save compiled pattern as", getName()) {
@@ -336,8 +381,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				}
 				try {
 					PickledCanarySearchTableProvider.this.selectedCompiledFile =
-							PickledCanary.pcAskFile(true,
-									PickledCanary.AskFileType.JSON, baseFile);
+						PickledCanary.pcAskFile(true,
+							PickledCanary.AskFileType.JSON, baseFile);
 				}
 				catch (CancelledException e) {
 					return;
@@ -345,9 +390,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 
 				if (selectedCompiledFile.exists()) {
 					final boolean overwrite = OptionDialog.showYesNoDialog(null, "Confirm Save As",
-							selectedCompiledFile.getName()
-									+ " already exists.\nDo you want to replace it?") ==
-							OptionDialog.OPTION_ONE;
+						selectedCompiledFile.getName() +
+							" already exists.\nDo you want to replace it?") == OptionDialog.OPTION_ONE;
 					if (!overwrite) {
 						return;
 					}
@@ -361,15 +405,15 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				}
 				catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
-							"Got an error writing the specified file. See details for more information",
-							e);
+						"Got an error writing the specified file. See details for more information",
+						e);
 				}
 
 			}
 		};
 
 		saveCompiledAsAction.setToolBarData(
-				new ToolBarData(new DotDotDotIcon(compiledPatternIcon), null));
+			new ToolBarData(new DotDotDotIcon(compiledPatternIcon), null));
 		saveCompiledAsAction.setEnabled(false);
 		saveCompiledAsAction.markHelpUnnecessary();
 		dockingTool.addLocalAction(this, saveCompiledAsAction);
@@ -383,8 +427,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 				}
 				catch (IOException e) {
 					Msg.showError(this, null, "Error writing file",
-							"Got an error writing the specified file. See details for more information",
-							e);
+						"Got an error writing the specified file. See details for more information",
+						e);
 				}
 				this.setEnabled(false);
 
@@ -412,6 +456,8 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 	public void dispose() {
 		filterTable.dispose();
 		filterTable.getTable().dispose();
+		contextHelper.dispose();
+		undoRedoKeeper.clear();
 		removeFromTool();
 	}
 
@@ -424,6 +470,10 @@ public class PickledCanarySearchTableProvider extends ComponentProviderAdapter
 	public void optionsChanged(ToolOptions options, String optionName, Object oldValue,
 			Object newValue) {
 		// Do nothing
+	}
+
+	public void updateContextInfo() {
+		contextHelper.updateContextInfo();
 	}
 
 	// Creates a 16x16 icon with a scaled base icon and puts 3 dots below it.

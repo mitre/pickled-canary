@@ -7,7 +7,7 @@
 //! * [StatesRingRcFixedUnique](crate::states::states_ring_rc_fixed_unique::StatesRingRcFixedUnique)
 //! * [StatesRingRcFixedRing](crate::states::states_ring_rc_fixed_ring::StatesRingRcFixedRing)
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 #[cfg(test)]
 use alloc::fmt::Display;

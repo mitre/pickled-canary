@@ -1,5 +1,5 @@
 
-// Copyright (C) 2024 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.utils;
 
@@ -9,9 +9,8 @@ public class Utils {
 
 	/**
 	 * Reverse order of byte array. Used to convert from big to little endian and vice versa.
-	 * 
-	 * @param arr
-	 *            the byte array to reverse
+	 *
+	 * @param arr the byte array to reverse
 	 * @return a new reversed byte array
 	 */
 	public static byte[] reverse(byte[] arr) {

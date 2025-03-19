@@ -1,4 +1,4 @@
-# Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+# Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 from ctypes import *
 from importlib.util import find_spec

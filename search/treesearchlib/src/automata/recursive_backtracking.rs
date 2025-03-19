@@ -7,7 +7,7 @@
 //! For an improvement on this technique see
 //! [crate::automata::recursive_backtracking_loop]
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::clone::Clone;
 use core::convert::TryInto;
@@ -141,6 +141,8 @@ pub fn recursive_backtracking_helper<Endian: BitOrder + Clone + PartialEq>(
             }
         }
         Op::Label { value } => {
+            // TODO: Check if label is already set and abort matching if current value we'd be setting here is not the same as what it already is.
+
             let mut restore: Option<i128> = None;
             if let Some(x) = saved.labels.get(value) {
                 restore = Some(*x);
@@ -187,21 +189,23 @@ pub fn recursive_backtracking_helper<Endian: BitOrder + Clone + PartialEq>(
         }
         Op::Lookup { data } | Op::LookupQuick { bytes: _, data } => {
             for v in data {
-                let result = v.do_lookup_with_saved_state(
-                    cache,
-                    &input.get_range(sp..),
-                    &prog.tables,
-                    saved,
-                );
-                if let Ok(good_result) = result {
-                    return recursive_backtracking_helper(
+                if sp < input.len() {
+                    let result = v.do_lookup_with_saved_state(
                         cache,
-                        prog,
-                        input,
-                        pc + 1,
-                        sp + good_result.size,
+                        &input.get_range(sp..),
+                        &prog.tables,
                         saved,
                     );
+                    if let Ok(good_result) = result {
+                        return recursive_backtracking_helper(
+                            cache,
+                            prog,
+                            input,
+                            pc + 1,
+                            sp + good_result.size,
+                            saved,
+                        );
+                    }
                 }
             }
             Results {

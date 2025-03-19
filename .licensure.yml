@@ -1,0 +1,75 @@
+excludes:
+  - \.gitignore
+  - \.gitattributes
+  - \.git/.*
+  - .*\.gitkeep
+  - \.licensure.yml
+  - .*\.(png|jar|bin|log|json)
+  - .*Cargo.lock
+  - LICENSE
+  - .cargo/.*
+
+  # Project specific files:
+  - (lib|ghidra_scripts)/README.txt
+  - Module.manifest
+  - search/MANIFEST.in
+  - extension.properties
+  - src/main/help/help/TOC_Source.xml
+  - src/main/help/help/topics/PickledCanaryPlugin/Pickled_Canary.html
+  - src/test/resources/defaultTools/TestCodeBrowser.tool
+  - .*\.(cspec|ldefs|pspec)
+
+licenses:
+  - files: any
+    ident: COPY
+    authors:
+      - name: The MITRE Corporation
+    template: "Copyright (C) [year] [name of author] All Rights Reserved"
+    replaces:
+      - "(// *)?Copyright \\(C\\) .* Rights Reserved\n?"
+    use_dynamic_year_ranges: false
+
+comments:
+  - columns: 80
+    extensions:
+      - java
+      - c
+      - h
+      - rs
+      - gradle
+      - g4
+    commenter:
+      type: line
+      comment_char: //
+      trailing_lines: 0
+
+  - columns: 120
+    extensions:
+      - toml
+      - py
+      - in
+      - yml
+      - iro
+      - sh
+      - slaspec
+    commenter:
+      type: line
+      comment_char: "#"
+      trailing_lines: 0
+
+  - columns: 80
+    extensions:
+      - ptn
+    commenter:
+      type: line
+      comment_char: ";"
+      trailing_lines: 0
+
+  - columns: 80
+    extensions:
+      - md
+      - txt
+    commenter:
+      type: line
+      comment_char: ">"
+      trailing_lines: 0

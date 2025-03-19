@@ -8,7 +8,7 @@
 //!
 //! [states_ring](crate::states::states_ring_rc) improves upon this.
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;

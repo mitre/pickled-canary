@@ -3,7 +3,7 @@
 //!
 //! The next improvement is in [crate::automata::pikevm_loop_ring_rc]
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use core::clone::Clone;
 extern crate test;

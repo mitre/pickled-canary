@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 use alloc::string::ToString as _;
 use alloc::vec;
@@ -39,6 +39,7 @@ impl<Endian: BitOrder> fmt::Display for OperandExtractionError<Endian> {
 pub trait InstructionEncodingTrait<Endian: BitOrder + Clone>: Clone {
     fn get_operand_options(&self) -> &Vec<OperandType<Endian>>;
     fn get_operand_options_mut(&mut self) -> &mut Vec<OperandType<Endian>>;
+    fn get_context(&self) -> &Option<Vec<u8>>;
 
     /// Compute the value(s) of the operand(s) represented by the given `bits`.
     ///
@@ -46,8 +47,9 @@ pub trait InstructionEncodingTrait<Endian: BitOrder + Clone>: Clone {
     /// This may produced unexpected output if the alignment of these bits (as
     /// specified by `sp_base_address` is not as expected in a running system.
     /// Specifically, if the operand value depends on masking some part of the
-    /// address of the current insruction, and that address is misaligned during
-    /// our computation of the operands value we may produce unexpected output.
+    /// address of the current instruction, and that address is misaligned
+    /// during our computation of the operands value we may produce unexpected
+    /// output.
     fn get_operands(
         &self,
         bits: &BitVec<u8, Endian>,
@@ -100,6 +102,7 @@ pub trait InstructionEncodingTrait<Endian: BitOrder + Clone>: Clone {
                 } => {
                     let v = expression.get_value(
                         bits.as_raw_slice(),
+                        self.get_context(),
                         size.try_into().unwrap(),
                         sp_base_address,
                     );
@@ -160,6 +163,7 @@ pub trait InstructionEncodingTrait<Endian: BitOrder + Clone>: Clone {
 pub struct InstructionEncoding<Endian: BitOrder> {
     pub value: BitVec<u8, Endian>,
     pub operands: Vec<OperandType<Endian>>,
+    pub context: Option<Vec<u8>>,
 }
 
 impl<Endian: BitOrder> From<j::InstructionEncoding> for InstructionEncoding<Endian> {
@@ -174,6 +178,9 @@ impl<Endian: BitOrder> From<j::InstructionEncoding> for InstructionEncoding<Endi
                     out
                 })
                 .collect(),
+            context: item
+                .context
+                .map(|x| x.into_iter().flat_map(u32::to_be_bytes).collect()),
         }
     }
 }
@@ -186,54 +193,8 @@ impl<Endian: BitOrder + Clone> InstructionEncodingTrait<Endian> for InstructionE
     fn get_operand_options_mut(&mut self) -> &mut Vec<OperandType<Endian>> {
         &mut self.operands
     }
+
+    fn get_context(&self) -> &Option<Vec<u8>> {
+        &self.context
+    }
 }
-
-// impl<Endian: BitOrder> InstructionEncoding<Endian> {
-//     pub fn get_operands(
-//         &self,
-//         bits: &BitVec<u8, Endian>,
-//         tables: &[OperandValueTable<Endian>],
-//     ) -> Result<Vec<ConcreteOperand<Endian>>, ()> {
-//         let mut out = vec![];
-//         for operand in &self.operands {
-//             out.push(match operand {
-//                 OperandType::Field {
-//                     table_id,
-//                     mask,
-//                     var_id,
-//                 } => {
-//                     let operand = val_from_val_and_mask(bits, mask);
-//                     let outt = tables
-//                         .get(*table_id)
-//                         .unwrap()
-//                         .iter()
-//                         .find_map(|(key, value)| {
-//                             if value.iter().any(|x| {
-//                                 // eprintln!("{:?} ==?\n{:?}\n{:?}\n", *x, operand, *x == operand);
-//                                 *x == operand
-//                             }) {
-//                                 Some(ConcreteOperand::Field {
-//                                     var_id: var_id.to_string(),
-//                                     name: key.clone(),
-//                                 })
-//                             } else {
-//                                 None
-//                             }
-//                         });
-
-//                     // eprintln!("Outt: {:?}", outt);
-
-//                     if outt.is_none() {
-//                         return Err(());
-//                     }
-//                     outt.unwrap()
-//                 }
-//                 OperandType::Scalar { mask } => ConcreteOperand::Scalar {
-//                     // TODO: Enforce Q1/var_id constraints on Scalars
-//                     value: val_from_val_and_mask::<Endian>(bits, mask),
-//                 },
-//             });
-//         }
-//         Ok(out)
-//     }
-// }

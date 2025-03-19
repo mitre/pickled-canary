@@ -1,9 +1,10 @@
 
-// Copyright (C) 2023 The MITRE Corporation All Rights Reserved
+// Copyright (C) 2025 The MITRE Corporation All Rights Reserved
 
 package org.mitre.pickledcanary.patterngenerator.output.steps;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.json.JSONObject;
 
@@ -22,7 +23,7 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 
 	/**
 	 * OperandMeta
-	 * 
+	 *
 	 * @param type      TypeOfOperand
 	 * @param mask      mask of an operand
 	 * @param varId     variable ID (e.g. Q1) of the operand
@@ -53,37 +54,57 @@ public abstract class OperandMeta implements Comparable<OperandMeta>{
 		return out;
 	}
 
+	@Override
 	public String toString() {
 		return "OperandMeta(varId: " + this.varId + ", type:" + this.type.toString() + ", mask: " +
 			this.mask.toString() + ")";
 	}
-	
+
+	@Override
 	public int compareTo(OperandMeta other) {
-		
+
 		if (this.type != other.type) {
 			if (this.type == TypeOfOperand.Field) {
 				return -1;
 			}
 			return 1;
 		}
-		
+
 		var out = this.varId.compareTo(other.varId);
 		if (out != 0) {
 			return out;
 		}
-		
+
 		out = Integer.compare(this.mask.size(), other.mask.size());
 		if (out != 0) {
 			return out;
 		}
-		
+
 		for (var i = 0; i < Math.min(this.mask.size(), other.mask.size()); i++) {
 			out = this.mask.get(i).compareTo(other.mask.get(i));
 			if (out != 0) {
 				return out;
 			}
 		}
-		
+
 		return 0;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(mask, type, varId);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		OperandMeta other = (OperandMeta) obj;
+		return Objects.equals(mask, other.mask) && type == other.type &&
+			Objects.equals(varId, other.varId);
 	}
 }
